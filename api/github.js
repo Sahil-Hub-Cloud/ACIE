@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'ignored' });
   }
 
-  res.status(200).json({ status: 'ok' });
+  // Pipeline starts below
 
   // 2. Start async processing pipeline
   const repo = req.body.repository.full_name;
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     if (jsFiles.length === 0) {
       console.log('No relevant source files changed. Exiting.');
       // await closeConnection();
-      return;
+      return res.status(200).json({ status: 'ok', message: 'No JS/TS files changed' });
     }
 
     const changedFilesInfo = [];
@@ -171,4 +171,5 @@ export default async function handler(req, res) {
     console.error('🔴 ACIE Pipeline Fatal Error:', err.message);
     // try { await closeConnection(); } catch {}
   }
+  return res.status(200).json({ status: 'ok' });
 }
