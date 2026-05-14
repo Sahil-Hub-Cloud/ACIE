@@ -49,12 +49,7 @@ export default async function handler(req, res) {
 
   try {
     console.log(`🚀 Starting pipeline for PR #${prNumber} in ${repo}`);
-    console.log('🔌 Connecting to Neo4j...');
-    await Promise.race([
-      connectToGraph(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Neo4j connect timeout after 10s')), 10000))
-    ]);
-    console.log('✅ Neo4j connected');
+    console.log('⏭️ Skipping Neo4j for now');
 
     // a. Get the list of changed files
     console.log('Fetching changed files from GitHub...');
@@ -68,7 +63,7 @@ export default async function handler(req, res) {
 
     if (jsFiles.length === 0) {
       console.log('No relevant source files changed. Exiting.');
-      await closeConnection();
+      // await closeConnection();
       return;
     }
 
@@ -90,8 +85,7 @@ export default async function handler(req, res) {
         const parsed = parseFile(filePath, content);
         console.log(`Parsed ${filePath}: ${parsed.exports.length} exports, ${parsed.imports.length} imports`);
         
-        // Save to Neo4j
-        await saveFileNode(filePath, parsed.exports, parsed.imports);
+        // await saveFileNode(filePath, parsed.exports, parsed.imports);
         console.log('💾 Saved:', file.filename);
         
         changedFilesInfo.push({
@@ -172,9 +166,9 @@ export default async function handler(req, res) {
     console.log('✅ Comment posted!');
     console.log('✅ Pipeline completed successfully.');
 
-    await closeConnection();
+    // await closeConnection();
   } catch (err) {
     console.error('🔴 ACIE Pipeline Fatal Error:', err.message);
-    try { await closeConnection(); } catch {}
+    // try { await closeConnection(); } catch {}
   }
 }
