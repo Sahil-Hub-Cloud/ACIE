@@ -1,9 +1,24 @@
-import axios from 'axios';
-import { parseFile } from '../src/parser/parser.js';
-import { connectToGraph, saveFileNode, getBlastRadius, closeConnection } from '../src/graph/graph.js';
-
 export default async function handler(req, res) {
   console.log('--- ACIE Webhook Triggered ---');
+
+  let parseFile, connectToGraph, saveFileNode, getBlastRadius, closeConnection, axios;
+  try {
+    const parser = await import('../src/parser/parser.js');
+    parseFile = parser.parseFile;
+    console.log('✅ Parser imported');
+    const graph = await import('../src/graph/graph.js');
+    connectToGraph = graph.connectToGraph;
+    saveFileNode = graph.saveFileNode;
+    getBlastRadius = graph.getBlastRadius;
+    closeConnection = graph.closeConnection;
+    console.log('✅ Graph imported');
+    const axiosModule = await import('axios');
+    axios = axiosModule.default;
+    console.log('✅ Axios imported');
+  } catch (importErr) {
+    console.error('❌ Import failed:', importErr.message);
+    return res.status(500).json({ error: 'Import failed', details: importErr.message });
+  }
   
   if (req.method !== 'POST') {
     return res.status(200).json({ status: 'ACIE is running!' });
