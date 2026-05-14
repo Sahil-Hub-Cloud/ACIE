@@ -4,7 +4,7 @@
   "description": "ACIE - AI Change Impact Engine. Analyzes code dependencies and posts blast radius reports on GitHub Pull Requests.",
   "main": "index.js",
   "type": "module",
-  "engines": { "node": "18.x" },
+  "engines": { "node": "24.x" },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
