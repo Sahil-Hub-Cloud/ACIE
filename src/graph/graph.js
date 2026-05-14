@@ -14,9 +14,15 @@ let session = null;
 
 /**
  * Connects to the Neo4j database using credentials from process.env.
- * Call this once before using any other graph functions.
+ * Singleton pattern — reuses the existing connection if already established.
  */
 export async function connectToGraph() {
+  // ── Singleton: skip if already connected ──────────────────────────────────
+  if (driver && session) {
+    console.log('♻️  Reusing existing Neo4j connection.');
+    return;
+  }
+
   const uri      = process.env.NEO4J_URI;
   const username = process.env.NEO4J_USERNAME;
   const password = process.env.NEO4J_PASSWORD;
@@ -27,13 +33,24 @@ export async function connectToGraph() {
     );
   }
 
-  driver  = neo4j.driver(uri, neo4j.auth.basic(username, password));
+  driver = neo4j.driver(
+    uri,
+    neo4j.auth.basic(username, password),
+    {
+      connectionTimeout:            30000, // 30s to establish a connection
+      maxConnectionLifetime:        60000, // recycle connections after 60s
+      maxConnectionPoolSize:        5,     // max 5 concurrent connections
+      connectionAcquisitionTimeout: 30000, // 30s to acquire from pool
+    }
+  );
+
   session = driver.session();
 
   // Verify connection
   await driver.verifyConnectivity();
   console.log(`✅ Connected to Neo4j at ${uri}`);
 }
+
 
 // ─── Save File Node ───────────────────────────────────────────────────────────
 
