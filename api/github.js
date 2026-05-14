@@ -1,24 +1,9 @@
+import axios from 'axios';
+import { parseFile } from '../src/parser/parser.js';
+import { connectToGraph, saveFileNode, getBlastRadius, closeConnection } from '../src/graph/graph.js';
+
 export default async function handler(req, res) {
   console.log('--- ACIE Webhook Triggered ---');
-
-  let parseFile, connectToGraph, saveFileNode, getBlastRadius, closeConnection, axios;
-  try {
-    const parser = await import('../src/parser/parser.js');
-    parseFile = parser.parseFile;
-    console.log('✅ Parser imported');
-    const graph = await import('../src/graph/graph.js');
-    connectToGraph = graph.connectToGraph;
-    saveFileNode = graph.saveFileNode;
-    getBlastRadius = graph.getBlastRadius;
-    closeConnection = graph.closeConnection;
-    console.log('✅ Graph imported');
-    const axiosModule = await import('axios');
-    axios = axiosModule.default;
-    console.log('✅ Axios imported');
-  } catch (importErr) {
-    console.error('❌ Import failed:', importErr.message);
-    return res.status(500).json({ error: 'Import failed', details: importErr.message });
-  }
   
   if (req.method !== 'POST') {
     return res.status(200).json({ status: 'ACIE is running!' });
@@ -35,7 +20,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'ignored' });
   }
 
-  // Pipeline starts below
+  res.status(200).json({ status: 'ok' });
 
   // 2. Start async processing pipeline
   const repo = req.body.repository.full_name;
@@ -49,7 +34,12 @@ export default async function handler(req, res) {
 
   try {
     console.log(`🚀 Starting pipeline for PR #${prNumber} in ${repo}`);
-    console.log('⏭️ Skipping Neo4j for now');
+    console.log('🔌 Connecting to Neo4j...');
+    await Promise.race([
+      connectToGraph(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Neo4j connect timeout after 10s')), 10000))
+    ]);
+    console.log('✅ Neo4j connected');
 
     // a. Get the list of changed files
     console.log('Fetching changed files from GitHub...');
@@ -59,12 +49,11 @@ export default async function handler(req, res) {
     // b. Filter for .js, .ts, .jsx, .tsx files
     const jsFiles = prFiles.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
     console.log(`Found ${jsFiles.length} JS/TS files to analyze.`);
-    console.log('📁 Changed files:', jsFiles.map(f => f.filename));
 
     if (jsFiles.length === 0) {
       console.log('No relevant source files changed. Exiting.');
-      // await closeConnection();
-      return res.status(200).json({ status: 'ok', message: 'No JS/TS files changed' });
+      await closeConnection();
+      return;
     }
 
     const changedFilesInfo = [];
@@ -85,8 +74,8 @@ export default async function handler(req, res) {
         const parsed = parseFile(filePath, content);
         console.log(`Parsed ${filePath}: ${parsed.exports.length} exports, ${parsed.imports.length} imports`);
         
-        // await saveFileNode(filePath, parsed.exports, parsed.imports);
-        console.log('💾 Saved:', file.filename);
+        // Save to Neo4j
+        await saveFileNode(filePath, parsed.exports, parsed.imports);
         
         changedFilesInfo.push({
           path: filePath,
@@ -112,7 +101,6 @@ export default async function handler(req, res) {
 
         // d. Query blast radius
         const blast = await getBlastRadius(filePath);
-        console.log('💥 Blast radius for', file.filename, ':', blast);
         blast.forEach(f => {
           // Don't count the file itself in its own blast radius
           if (f !== filePath) allAffectedFiles.add(f);
@@ -161,15 +149,13 @@ export default async function handler(req, res) {
       reportBody += `\n### 💡 Recommendation\nReview the affected files before merging.\n\n*Powered by [ACIE](https://github.com/Sahil-Hub-Cloud/ACIE) — AI Change Impact Engine*`;
     }
 
-    console.log('💬 Posting comment...');
+    console.log('Posting report to GitHub...');
     await axios.post(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, { body: reportBody }, { headers });
-    console.log('✅ Comment posted!');
     console.log('✅ Pipeline completed successfully.');
 
-    // await closeConnection();
+    await closeConnection();
   } catch (err) {
     console.error('🔴 ACIE Pipeline Fatal Error:', err.message);
-    // try { await closeConnection(); } catch {}
+    try { await closeConnection(); } catch {}
   }
-  return res.status(200).json({ status: 'ok' });
 }

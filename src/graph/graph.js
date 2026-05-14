@@ -14,15 +14,9 @@ let session = null;
 
 /**
  * Connects to the Neo4j database using credentials from process.env.
- * Singleton pattern — reuses the existing connection if already established.
+ * Creates a new driver and session every time it's called.
  */
 export async function connectToGraph() {
-  // ── Singleton: skip if already connected ──────────────────────────────────
-  if (driver && session) {
-    console.log('♻️  Reusing existing Neo4j connection.');
-    return;
-  }
-
   const uri      = process.env.NEO4J_URI;
   const username = process.env.NEO4J_USERNAME;
   const password = process.env.NEO4J_PASSWORD;
