@@ -49,7 +49,11 @@ export default async function handler(req, res) {
 
   try {
     console.log(`🚀 Starting pipeline for PR #${prNumber} in ${repo}`);
-    await connectToGraph();
+    console.log('🔌 Connecting to Neo4j...');
+    await Promise.race([
+      connectToGraph(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Neo4j connect timeout after 10s')), 10000))
+    ]);
     console.log('✅ Neo4j connected');
 
     // a. Get the list of changed files
