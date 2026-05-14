@@ -1,0 +1,20 @@
+{
+  "name": "acie",
+  "version": "1.0.0",
+  "description": "ACIE - AI Change Impact Engine. Analyzes code dependencies and posts blast radius reports on GitHub Pull Requests.",
+  "main": "index.js",
+  "type": "module",
+  "engines": { "node": "18.x" },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "probot": "^13.0.0",
+    "dotenv": "^16.0.0",
+    "axios": "^1.6.0"
+  },
+  "keywords": ["github-app", "probot", "code-analysis", "blast-radius"],
+  "author": "",
+  "license": "ISC"
+}

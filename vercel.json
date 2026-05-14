@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "builds": [{ "src": "api/github.js", "use": "@vercel/node" }],
+  "routes": [{ "src": "/api/github", "dest": "/api/github.js" }]
+}
