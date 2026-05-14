@@ -3,45 +3,154 @@ import { parseFile } from '../src/parser/parser.js';
 import { connectToGraph, saveFileNode, getBlastRadius, closeConnection } from '../src/graph/graph.js';
 
 export default async function handler(req, res) {
+  console.log('--- ACIE Webhook Triggered ---');
+  
   if (req.method !== 'POST') {
     return res.status(200).json({ status: 'ACIE is running!' });
   }
 
   const event = req.headers['x-github-event'];
   const action = req.body?.action;
+  
+  console.log(`Event: ${event}, Action: ${action}`);
 
-  console.log('EVENT:', event);
-  console.log('ACTION:', action);
-  console.log('BODY KEYS:', Object.keys(req.body || {}));
-
-  if (event !== 'pull_request') {
-    console.log('Ignoring non-PR event');
-    return res.status(200).json({ status: 'ignored' });
-  }
-
-  if (!['opened', 'synchronize', 'reopened'].includes(action)) {
-    console.log('Ignoring action:', action);
+  // 1. Respond 200 immediately to GitHub
+  if (event !== 'pull_request' || !['opened', 'synchronize', 'reopened'].includes(action)) {
+    console.log('Ignoring event/action');
     return res.status(200).json({ status: 'ignored' });
   }
 
   res.status(200).json({ status: 'ok' });
 
+  // 2. Start async processing pipeline
   const repo = req.body.repository.full_name;
   const prNumber = req.body.pull_request.number;
+  const headSha = req.body.pull_request.head.sha;
   const token = process.env.GITHUB_TOKEN;
-  const headers = { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' };
+  const headers = { 
+    Authorization: `token ${token}`, 
+    Accept: 'application/vnd.github.v3+json' 
+  };
 
   try {
-    const comment = `## ✅ ACIE — Blast Radius Report\n\n**Files changed:** src/final.js\n\n**Blast Radius:** No other files affected.\n\n**Risk Level:** LOW\n\n*Powered by ACIE — AI Change Impact Engine*`;
+    console.log(`🚀 Starting pipeline for PR #${prNumber} in ${repo}`);
+    await connectToGraph();
+
+    // a. Get the list of changed files
+    console.log('Fetching changed files from GitHub...');
+    const filesRes = await axios.get(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, { headers });
+    const prFiles = filesRes.data;
     
-    const axios = (await import('axios')).default;
-    await axios.post(
-      `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`,
-      { body: comment },
-      { headers }
-    );
-    console.log('Comment posted successfully!');
+    // b. Filter for .js, .ts, .jsx, .tsx files
+    const jsFiles = prFiles.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
+    console.log(`Found ${jsFiles.length} JS/TS files to analyze.`);
+
+    if (jsFiles.length === 0) {
+      console.log('No relevant source files changed. Exiting.');
+      await closeConnection();
+      return;
+    }
+
+    const changedFilesInfo = [];
+    const allAffectedFiles = new Set();
+    const missingTests = [];
+
+    // c. Process each file
+    for (const file of jsFiles) {
+      const filePath = file.filename;
+      console.log(`Processing file: ${filePath}`);
+      
+      try {
+        // Fetch content from GitHub
+        const contentRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${filePath}?ref=${headSha}`, { headers });
+        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
+        
+        // Parse imports/exports
+        const parsed = parseFile(filePath, content);
+        console.log(`Parsed ${filePath}: ${parsed.exports.length} exports, ${parsed.imports.length} imports`);
+        
+        // Save to Neo4j
+        await saveFileNode(filePath, parsed.exports, parsed.imports);
+        
+        changedFilesInfo.push({
+          path: filePath,
+          exports: parsed.exports.length,
+          imports: parsed.imports.length
+        });
+
+        // Check for test file coverage
+        // A test file is any file ending in .test.js, .test.ts, .spec.js, .spec.ts
+        const isTestFile = filePath.match(/\.(test|spec)\.(js|ts|jsx|tsx)$/);
+        if (!isTestFile) {
+          const baseName = filePath.split('.').slice(0, -1).join('.');
+          const testPatterns = [
+            `${baseName}.test.js`, `${baseName}.test.ts`, `${baseName}.test.jsx`, `${baseName}.test.tsx`,
+            `${baseName}.spec.js`, `${baseName}.spec.ts`, `${baseName}.spec.jsx`, `${baseName}.spec.tsx`
+          ];
+          
+          const hasTestInPR = prFiles.some(f => testPatterns.includes(f.filename));
+          if (!hasTestInPR) {
+            missingTests.push(filePath);
+          }
+        }
+
+        // d. Query blast radius
+        const blast = await getBlastRadius(filePath);
+        blast.forEach(f => {
+          // Don't count the file itself in its own blast radius
+          if (f !== filePath) allAffectedFiles.add(f);
+        });
+        
+      } catch (fileErr) {
+        console.error(`❌ Error analyzing ${filePath}:`, fileErr.message);
+      }
+    }
+
+    // e. Calculate Risk Score
+    const affectedCount = allAffectedFiles.size;
+    let riskLevel = 'LOW';
+    if (affectedCount >= 3) riskLevel = 'HIGH';
+    else if (affectedCount >= 1) riskLevel = 'MEDIUM';
+
+    console.log(`Risk Assessment: ${riskLevel} (${affectedCount} affected files)`);
+
+    // f. Post Report Comment
+    console.log('Generating Markdown report...');
+    let reportBody = '';
+    
+    if (affectedCount === 0) {
+      reportBody = `## ✅ ACIE — Change Impact Report\n\n### 📁 Files Changed\n`;
+      changedFilesInfo.forEach(f => {
+        reportBody += `- ${f.path} (${f.exports} export${f.exports !== 1 ? 's' : ''}, ${f.imports} import${f.imports !== 1 ? 's' : ''})\n`;
+      });
+      reportBody += `\n### 💥 Blast Radius\nNo other files affected by this change.\n\n### 🎯 Risk Score: **LOW**\nSafe to merge.\n\n*Powered by [ACIE](https://github.com/Sahil-Hub-Cloud/ACIE) — AI Change Impact Engine*`;
+    } else {
+      reportBody = `## 🔍 ACIE — Change Impact Report\n\n### 📁 Files Changed\n`;
+      changedFilesInfo.forEach(f => {
+        reportBody += `- ${f.path} (${f.exports} export${f.exports !== 1 ? 's' : ''}, ${f.imports} import${f.imports !== 1 ? 's' : ''})\n`;
+      });
+      
+      reportBody += `\n### 💥 Blast Radius\n`;
+      allAffectedFiles.forEach(f => {
+        reportBody += `- ${f}\n`;
+      });
+      
+      reportBody += `\n### 🎯 Risk Score: **${riskLevel}**\n- ${affectedCount} file${affectedCount !== 1 ? 's' : ''} affected by this change\n`;
+      
+      missingTests.forEach(f => {
+        reportBody += `- ⚠️ ${f} has no test coverage\n`;
+      });
+      
+      reportBody += `\n### 💡 Recommendation\nReview the affected files before merging.\n\n*Powered by [ACIE](https://github.com/Sahil-Hub-Cloud/ACIE) — AI Change Impact Engine*`;
+    }
+
+    console.log('Posting report to GitHub...');
+    await axios.post(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, { body: reportBody }, { headers });
+    console.log('✅ Pipeline completed successfully.');
+
+    await closeConnection();
   } catch (err) {
-    console.error('Comment error:', err.message);
+    console.error('🔴 ACIE Pipeline Fatal Error:', err.message);
+    try { await closeConnection(); } catch {}
   }
 }
