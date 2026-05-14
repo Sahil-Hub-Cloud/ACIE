@@ -50,6 +50,7 @@ export default async function handler(req, res) {
   try {
     console.log(`🚀 Starting pipeline for PR #${prNumber} in ${repo}`);
     await connectToGraph();
+    console.log('✅ Neo4j connected');
 
     // a. Get the list of changed files
     console.log('Fetching changed files from GitHub...');
@@ -59,6 +60,7 @@ export default async function handler(req, res) {
     // b. Filter for .js, .ts, .jsx, .tsx files
     const jsFiles = prFiles.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
     console.log(`Found ${jsFiles.length} JS/TS files to analyze.`);
+    console.log('📁 Changed files:', jsFiles.map(f => f.filename));
 
     if (jsFiles.length === 0) {
       console.log('No relevant source files changed. Exiting.');
@@ -86,6 +88,7 @@ export default async function handler(req, res) {
         
         // Save to Neo4j
         await saveFileNode(filePath, parsed.exports, parsed.imports);
+        console.log('💾 Saved:', file.filename);
         
         changedFilesInfo.push({
           path: filePath,
@@ -111,6 +114,7 @@ export default async function handler(req, res) {
 
         // d. Query blast radius
         const blast = await getBlastRadius(filePath);
+        console.log('💥 Blast radius for', file.filename, ':', blast);
         blast.forEach(f => {
           // Don't count the file itself in its own blast radius
           if (f !== filePath) allAffectedFiles.add(f);
@@ -159,8 +163,9 @@ export default async function handler(req, res) {
       reportBody += `\n### 💡 Recommendation\nReview the affected files before merging.\n\n*Powered by [ACIE](https://github.com/Sahil-Hub-Cloud/ACIE) — AI Change Impact Engine*`;
     }
 
-    console.log('Posting report to GitHub...');
+    console.log('💬 Posting comment...');
     await axios.post(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, { body: reportBody }, { headers });
+    console.log('✅ Comment posted!');
     console.log('✅ Pipeline completed successfully.');
 
     await closeConnection();
