@@ -8,13 +8,19 @@ export default async function handler(req, res) {
   }
 
   const event = req.headers['x-github-event'];
+  const action = req.body?.action;
+
+  console.log('EVENT:', event);
+  console.log('ACTION:', action);
+  console.log('BODY KEYS:', Object.keys(req.body || {}));
 
   if (event !== 'pull_request') {
+    console.log('Ignoring non-PR event');
     return res.status(200).json({ status: 'ignored' });
   }
 
-  const action = req.body.action;
   if (!['opened', 'synchronize', 'reopened'].includes(action)) {
+    console.log('Ignoring action:', action);
     return res.status(200).json({ status: 'ignored' });
   }
 
