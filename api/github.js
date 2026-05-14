@@ -1,27 +1,24 @@
-/**
- * ACIE - GitHub Webhook Handler
- * Vercel Serverless Function — receives GitHub App webhook events
- */
+import crypto from 'crypto';
+import fs from 'fs';
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+  if (req.method !== 'POST') {
+    return res.status(200).json({ status: 'ACIE is running!' });
   }
 
-  // Read headers sent by GitHub
-  const githubEvent = req.headers["x-github-event"] || "unknown";
-  const deliveryId = req.headers["x-github-delivery"] || "unknown";
-  const signature = req.headers["x-hub-signature-256"] || "";
+  const signature = req.headers['x-hub-signature-256'];
+  const event = req.headers['x-github-event'];
+  const body = JSON.stringify(req.body);
 
-  console.log("Webhook received");
-  console.log(`Event: ${githubEvent}`);
-  console.log(`Delivery ID: ${deliveryId}`);
-  console.log(`Signature present: ${signature ? "yes" : "no"}`);
+  console.log(`Webhook received: ${event}`);
 
-  // Log the raw body payload
-  const body = req.body;
-  if (body) {
-    console.log("Payload:", JSON.stringify(body, null, 2));
+  if (event === 'pull_request') {
+    const action = req.body.action;
+    const prTitle = req.body.pull_request.title;
+    const prNumber = req.body.pull_request.number;
+    const repo = req.body.repository.full_name;
+    console.log(`PR #${prNumber} ${action}: "${prTitle}" in ${repo}`);
   }
 
-  return res.status(200).json({ status: "ok" });
+  return res.status(200).json({ status: 'ok' });
 }
