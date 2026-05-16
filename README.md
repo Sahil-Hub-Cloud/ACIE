@@ -1,53 +1,35 @@
-# ACIE - AI Change Impact Engine
+# ⚡ ACIE — AI Change Impact Engine
 
-ACIE - AI Change Impact Engine. Analyzes code dependencies and posts blast radius reports on GitHub Pull Requests.
+> Google Maps for your codebase.
 
-## Project Structure
+ACIE is a GitHub App that automatically analyzes every Pull Request and posts a blast radius report — telling developers exactly which files will be affected before they merge.
 
-```
-acie/
-  src/
-    github/        ← GitHub App logic
-    parser/        ← code parsing logic
-    graph/         ← Neo4j database logic
-    comment/       ← PR comment logic
-  index.js         ← main entry point
-  package.json
-  .env.example     ← environment variables template
-  README.md
-```
+## 🔍 How it works
 
-## Setup
+1. Developer opens a Pull Request
+2. ACIE scans all changed files
+3. Maps import/export relationships across the repo
+4. Calculates blast radius
+5. Posts a detailed risk report as a PR comment
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Copy `.env.example` to `.env` and fill in your credentials:
-   ```bash
-   cp .env.example .env
-   ```
+## 🎯 Risk Levels
 
-## Environment Variables
+- ✅ **LOW** — No other files affected. Safe to merge.
+- ⚠️ **MEDIUM** — 1-2 files affected, or missing test coverage.
+- 🔴 **HIGH** — 3+ files affected. Review carefully.
 
-| Variable         | Description                        |
-|------------------|------------------------------------|
-| `APP_ID`         | GitHub App ID                      |
-| `PRIVATE_KEY`    | GitHub App private key             |
-| `WEBHOOK_SECRET` | GitHub webhook secret              |
-| `NEO4J_URI`      | Neo4j database connection URI      |
-| `NEO4J_USER`     | Neo4j database username            |
-| `NEO4J_PASSWORD` | Neo4j database password            |
+## 🚀 Live
 
-## Running the App
+- **Landing Page:** https://acie-gamma.vercel.app
+- **Dashboard:** https://acie-gamma.vercel.app/dashboard
 
-```bash
-npm start
-```
+## 🛠️ Built with
 
-## Dependencies
+- GitHub Apps
+- Vercel Serverless Functions
+- Node.js
+- JavaScript/TypeScript Parser
 
-- **[probot](https://probot.github.io/)** — GitHub App framework
-- **[dotenv](https://github.com/motdotla/dotenv)** — Loads environment variables from `.env`
-- **[axios](https://axios-http.com/)** — HTTP client for API requests
+## 👤 Author
+
+Built by [Sahil-Hub-Cloud](https://github.com/Sahil-Hub-Cloud)
