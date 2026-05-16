@@ -2,10 +2,12 @@
   "version": 2,
   "builds": [
     { "src": "api/github.js", "use": "@vercel/node" },
-    { "src": "api/dashboard.js", "use": "@vercel/node" }
+    { "src": "api/dashboard.js", "use": "@vercel/node" },
+    { "src": "api/landing.js", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/api/github", "dest": "/api/github.js" },
-    { "src": "/dashboard", "dest": "/api/dashboard.js" }
+    { "src": "/dashboard", "dest": "/api/dashboard.js" },
+    { "src": "/", "dest": "/api/landing.js" }
   ]
 }
