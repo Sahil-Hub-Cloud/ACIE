@@ -5,13 +5,15 @@
     { "src": "api/dashboard.js", "use": "@vercel/node" },
     { "src": "api/landing.js", "use": "@vercel/node" },
     { "src": "api/history.js", "use": "@vercel/node" },
-    { "src": "api/history-data.js", "use": "@vercel/node" }
+    { "src": "api/history-data.js", "use": "@vercel/node" },
+    { "src": "api/pricing.js", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/api/github", "dest": "/api/github.js" },
     { "src": "/api/history-data", "dest": "/api/history-data.js" },
     { "src": "/dashboard", "dest": "/api/dashboard.js" },
     { "src": "/history", "dest": "/api/history.js" },
+    { "src": "/pricing", "dest": "/api/pricing.js" },
     { "src": "/", "dest": "/api/landing.js" }
   ]
 }
