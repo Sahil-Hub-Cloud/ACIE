@@ -2,6 +2,7 @@ import axios from 'axios';
 import { parseFile } from '../src/parser/parser.js';
 
 export default async function handler(req, res) {
+  const startTime = Date.now(); // Start the clock
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE is running' });
 
   const event = req.headers['x-github-event'];
@@ -23,7 +24,6 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    // Build a professional Markdown Table
     let tableRows = "| File | Type | Exports | Status |\n| :--- | :--- | :--- | :--- |\n";
     
     for (const file of supportedFiles) {
@@ -31,24 +31,20 @@ export default async function handler(req, res) {
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        
-        try {
-          const parsed = parseFile(file.filename, content);
-          tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " | ✅ Analyzed |\n";
-        } catch (e) {
-          tableRows += "| `" + file.filename + "` | " + ext + " | - | ⚠️ Parsing Error |\n";
-        }
+        const parsed = parseFile(file.filename, content);
+        tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " | ✅ Analyzed |\n";
       } catch (e) {
-        tableRows += "| `" + file.filename + "` | " + ext + " | - | ❌ Download Failed |\n";
+        tableRows += "| `" + file.filename + "` | " + ext + " | - | ⚠️ Skipped |\n";
       }
     }
 
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2); // Calculate time
+
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "> Automated codebase analysis for **" + repo + "**\n\n" +
                     "### 📊 Analysis Summary\n" + tableRows + 
-                    "\n\n**Recommendation:** review the exports above for unexpected breaking changes.\n" +
+                    "\n\n**Performance:** Analyzed in " + duration + "s 🚀\n" +
                     "--- \n" +
-                    "*Powered by [ACIE Dashboard](https://acie-gamma.vercel.app/dashboard)*";
+                    "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
 
