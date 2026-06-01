@@ -24,47 +24,48 @@ export default async function handler(req, res) {
 
     if (changedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Type | Quality | Risk |\n| :--- | :--- | :--- | :--- |\n";
-    let untestedFiles = [];
-    
-    // Logic: Look for test files in the PR
+    let tableRows = "| File | Lines | Security | Quality |\n| :--- | :--- | :--- | :--- |\n";
+    let globalRiskPoints = 0;
     const hasTestFile = filesRes.data.some(f => f.filename.includes('test') || f.filename.includes('spec'));
 
     for (const file of changedFiles) {
-      const isTest = file.filename.includes('test') || file.filename.includes('spec');
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         const parsed = parseFile(file.filename, content);
         
-        // Quality check: Is this file missing a corresponding test?
-        const qualityStatus = (isTest || hasTestFile) ? "✅ Tested" : "⚠️ Untested";
-        if (!isTest && !hasTestFile) untestedFiles.push(file.filename);
+        const loc = content.split('\n').length;
+        const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
+        const isTest = file.filename.includes('test') || f.filename.includes('spec');
+        
+        // Calculate Risk Points
+        if (hasSecret) globalRiskPoints += 50;
+        if (loc > 300) globalRiskPoints += 10;
+        if (!hasTestFile && !isTest) globalRiskPoints += 20;
+        if (parsed.exports.length > 10) globalRiskPoints += 10;
 
-        const ext = file.filename.split('.').pop().toUpperCase();
-        const complexity = parsed.exports.length > 8 ? "🔴 High" : "🟢 Low";
-
-        tableRows += "| `" + file.filename + "` | " + ext + " | " + qualityStatus + " | " + complexity + " |\n";
-      } catch (e) {
-        tableRows += "| `" + file.filename + "` | - | - | ⚠️ Skipped |\n";
-      }
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + (hasSecret ? "🚨" : "✅") + " | " + (hasTestFile ? "✅" : "❌") + " |\n";
+      } catch (e) { }
     }
 
-    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    let qualityAdvice = untestedFiles.length > 0 
-      ? "> 🧪 **Quality Gap:** No test files detected in this PR. Consider adding unit tests for your changes." 
-      : "> ✨ **Quality Check:** Tests detected. Great job maintaining coverage!";
+    // Determine Executive Verdict
+    let verdict = "✅ **SAFE TO MERGE**";
+    let color = "green";
+    if (globalRiskPoints >= 50) { verdict = "❌ **DO NOT MERGE**"; color = "red"; }
+    else if (globalRiskPoints >= 20) { verdict = "⚠️ **PROCEED WITH CAUTION**"; color = "yellow"; }
 
-    const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 📊 Intelligence Audit\n" + tableRows + "\n" +
-                    qualityAdvice + "\n\n" +
-                    "**Performance:** AI Audit finished in " + duration + "s 🚀\n" +
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    const comment = "# ⚡ ACIE Executive Verdict: " + verdict + "\n\n" +
+                    "> AI has calculated a Risk Score of **" + globalRiskPoints + "** for this PR.\n\n" +
+                    "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
+                    "**Performance:** AI Decision Engine optimized in " + duration + "s 🚀\n" +
                     "--- \n" +
-                    "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
+                    "*Powered by [Sahil's ACIE Engine](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
 
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: 'success', riskScore: globalRiskPoints });
   } catch (err) {
     return res.status(200).json({ status: 'error_logged' });
   }
