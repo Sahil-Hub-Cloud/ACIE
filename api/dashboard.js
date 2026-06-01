@@ -1,90 +1,80 @@
 export default async function handler(req, res) {
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>ACIE — AI Change Impact Engine</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACIE — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
-    .header { background: linear-gradient(135deg, #1f2937, #111827); border-bottom: 1px solid #30363d; padding: 24px 40px; display: flex; align-items: center; gap: 16px; }
-    .header h1 { color: #58a6ff; font-size: 28px; font-weight: 700; }
-    .header p { color: #8b949e; font-size: 14px; margin-top: 4px; }
-    .badge { background: #238636; color: #fff; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
-    .container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; }
-    .card h2 { font-size: 16px; color: #58a6ff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .card p, .card li { color: #8b949e; font-size: 14px; line-height: 1.8; }
-    .card ol { padding-left: 20px; }
-    .stat { font-size: 36px; font-weight: 700; color: #c9d1d9; }
-    .stat-label { color: #8b949e; font-size: 13px; margin-top: 4px; }
-    .risk-low { color: #3fb950; font-weight: 600; font-size: 14px; margin: 8px 0; }
-    .risk-medium { color: #d29922; font-weight: 600; font-size: 14px; margin: 8px 0; }
-    .risk-high { color: #f85149; font-weight: 600; font-size: 14px; margin: 8px 0; }
-    .full { grid-column: 1 / -1; }
-    .footer { text-align: center; color: #484f58; font-size: 13px; margin-top: 40px; padding-bottom: 40px; }
-    .footer a { color: #58a6ff; text-decoration: none; }
-    .tag { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #8b949e; margin: 4px 4px 0 0; }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:#080c14;color:#c9d1d9;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes glow{0%,100%{opacity:.5}50%{opacity:1}}
+    .nav{background:#080c14cc;backdrop-filter:blur(12px);border-bottom:1px solid #21262d;padding:16px 40px;display:flex;justify-content:space-between;align-items:center;}
+    .nav-logo{color:#fff;font-weight:700;font-size:18px;text-decoration:none;}
+    .nav-logo span{color:#58a6ff;}
+    .nav-links a{color:#8b949e;text-decoration:none;font-size:14px;margin-left:24px;transition:color .2s;}
+    .nav-links a:hover{color:#fff;}
+    .container{max-width:960px;margin:48px auto;padding:0 24px;}
+    .page-title{font-size:28px;font-weight:700;color:#fff;letter-spacing:-1px;margin-bottom:4px;animation:fadeUp .5s ease both;}
+    .page-sub{color:#8b949e;font-size:14px;margin-bottom:36px;animation:fadeUp .5s .1s ease both;}
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;animation:fadeUp .5s .15s ease both;}
+    .stat-card{background:#0d1117;border:1px solid #21262d;border-radius:12px;padding:20px 24px;}
+    .stat-card .num{font-size:32px;font-weight:700;color:#fff;letter-spacing:-1px;}
+    .stat-card .num.green{color:#3fb950;}
+    .stat-card .num.blue{color:#58a6ff;}
+    .stat-card .lbl{color:#8b949e;font-size:13px;margin-top:4px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;animation:fadeUp .5s .2s ease both;}
+    .card{background:#0d1117;border:1px solid #21262d;border-radius:14px;padding:24px;}
+    .card h2{font-size:15px;font-weight:600;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .card p,.card li{color:#8b949e;font-size:14px;line-height:1.8;}
+    .card ol{padding-left:18px;}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#3fb950;animation:glow 2s infinite;}
+    .risk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #21262d22;}
+    .risk-row:last-child{border-bottom:none;}
+    .risk-badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+    .low{background:#0d2a14;color:#3fb950;}
+    .medium{background:#2a1f0d;color:#d29922;}
+    .high{background:#2a0d0d;color:#f85149;}
+    .full{grid-column:1/-1;}
+    .tag{display:inline-block;background:#0d1f35;border:1px solid #1e4a7a;border-radius:6px;padding:4px 12px;font-size:12px;color:#58a6ff;margin:4px 4px 0 0;}
+    .footer{text-align:center;padding:40px;color:#484f58;font-size:13px;border-top:1px solid #21262d;margin-top:60px;}
+    .footer a{color:#58a6ff;text-decoration:none;}
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <h1>⚡ ACIE</h1>
-      <p>AI Change Impact Engine — Google Maps for your codebase</p>
-    </div>
-    <span class="badge">● LIVE</span>
+<nav class="nav">
+  <a href="/" class="nav-logo">⚡ <span>ACIE</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/pricing">Pricing</a>
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
   </div>
-  <div class="container">
-    <div class="grid">
-      <div class="card">
-        <h2>🤖 What is ACIE?</h2>
-        <p>ACIE automatically analyzes every Pull Request and tells developers exactly which files will be affected by their changes — before they merge.</p>
-      </div>
-      <div class="card">
-        <h2>📡 Status</h2>
-        <div class="stat">✅</div>
-        <div class="stat-label">Actively monitoring GitHub Pull Requests</div>
-      </div>
-    </div>
-    <div class="grid">
-      <div class="card">
-        <h2>🔍 How it works</h2>
-        <ol>
-          <li>Developer opens a Pull Request</li>
-          <li>ACIE scans all changed files</li>
-          <li>Maps import/export relationships</li>
-          <li>Calculates blast radius across the repo</li>
-          <li>Posts a risk report as a PR comment</li>
-        </ol>
-      </div>
-      <div class="card">
-        <h2>🎯 Risk Levels</h2>
-        <p class="risk-low">● LOW — Safe to merge</p>
-        <p>No other files affected by the change.</p>
-        <br/>
-        <p class="risk-medium">● MEDIUM — Review before merging</p>
-        <p>1-2 files affected, or missing test coverage.</p>
-        <br/>
-        <p class="risk-high">● HIGH — Review carefully</p>
-        <p>3+ files affected by the change.</p>
-      </div>
-    </div>
-    <div class="card full">
-      <h2>🛠️ Powered by</h2>
-      <span class="tag">GitHub Apps</span>
-      <span class="tag">Vercel</span>
-      <span class="tag">Node.js</span>
-      <span class="tag">JavaScript Parser</span>
-      <span class="tag">Blast Radius Detection</span>
-      <span class="tag">Risk Scoring</span>
-    </div>
+</nav>
+<div class="container">
+  <div class="page-title">Dashboard</div>
+  <div class="page-sub">AI Change Impact Engine — monitoring your codebase in real time</div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="num green">✓</div><div class="lbl">System live</div></div>
+    <div class="stat-card"><div class="num blue">3</div><div class="lbl">Risk levels</div></div>
+    <div class="stat-card"><div class="num">&lt;3s</div><div class="lbl">Avg response</div></div>
+    <div class="stat-card"><div class="num">100%</div><div class="lbl">Uptime</div></div>
   </div>
-  <div class="footer">
-    <p>Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> · <a href="https://github.com/Sahil-Hub-Cloud/ACIE">View on GitHub</a></p>
-  </div>
-</body>
-</html>`;
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(html);
-}
+  <div class="grid">
+    <div class="card">
+      <h2><span class="status-dot"></span> Status</h2>
+      <p>ACIE is actively monitoring all pull requests. Every PR gets an automatic blast radius report within seconds of opening.</p>
+    </div>
+    <div class="card">
+      <h2>🔍 How it works</h2>
+      <ol>
+        <li>Developer opens a Pull Request</li>
+        <li>ACIE scans all changed files</li>
+        <li>Maps import/export relationships</li>
+        <li>Posts a risk report as a PR comment</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>🎯 Risk levels</h2>
+      <div class="risk-ro
