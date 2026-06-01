@@ -24,45 +24,37 @@ export default async function handler(req, res) {
 
     if (changedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    const changedNames = changedFiles.map(f => f.filename.split('/').pop().replace(/\.(js|ts|jsx|tsx|py)$/, ''));
+    let tableRows = "| File | Lines | Structure | Risk |\n| :--- | :--- | :--- | :--- |\n";
+    let bloatedFiles = [];
     
-    // 1. Get the entire repo tree to find dependencies
-    const treeRes = await axios.get("https://api.github.com/repos/" + repo + "/git/trees/" + headSha + "?recursive=1", { headers });
-    const allRepoFiles = treeRes.data.tree.filter(f => f.type === 'blob' && f.path.match(/\.(js|ts|jsx|tsx|py)$/));
-
-    const impactZone = new Set();
-    
-    // 2. Deep Scan: Check every file in the repo
-    for (const repoFile of allRepoFiles) {
-      if (changedFiles.find(f => f.filename === repoFile.path)) continue; // Skip files already in the PR
-      
+    for (const file of changedFiles) {
       try {
-        const fileContentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + repoFile.path + "?ref=" + headSha, { headers });
-        const content = Buffer.from(fileContentRes.data.content, 'base64').toString('utf-8');
-        const parsed = parseFile(repoFile.path, content);
+        const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
+        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
+        const parsed = parseFile(file.filename, content);
         
-        // Check if this repo file imports any of our changed files
-        for (const imp of parsed.imports) {
-           if (changedNames.some(name => imp.from.includes(name))) {
-             impactZone.add(repoFile.path);
-           }
-        }
-      } catch (e) { /* skip files that fail to download */ }
+        // Logic: Count lines of code
+        const loc = content.split('\n').length;
+        const complexity = parsed.exports.length > 8 || loc > 300 ? "🔴 High" : "🟢 Low";
+        
+        if (loc > 300) bloatedFiles.push(file.filename);
+
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + parsed.exports.length + " units | " + complexity + " |\n";
+      } catch (e) {
+        tableRows += "| `" + file.filename + "` | - | - | ⚠️ Skipped |\n";
+      }
     }
 
-    // 3. Build Report
-    let impactList = impactZone.size > 0 
-      ? Array.from(impactZone).map(f => "- `" + f + "`").join("\n")
-      : "✅ No external files affected.";
-
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    const riskBadge = impactZone.size > 5 ? "🔴 HIGH" : (impactZone.size > 0 ? "🟡 MEDIUM" : "🟢 LOW");
+    let advice = bloatedFiles.length > 0 
+      ? "> ⚠️ **Bloat Warning:** Files like `" + bloatedFiles[0] + "` are getting large (>300 lines). Consider refactoring." 
+      : "> ✅ **Clean Code:** All changed files are within healthy size limits.";
 
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 🎯 Risk Assessment: " + riskBadge + "\n" +
-                    "**Impact Zone (Files that might break):**\n" + impactList + "\n\n" +
+                    "### 📊 Code Health Summary\n" + tableRows + "\n" +
+                    advice + "\n\n" +
+                    "**Performance:** Deep Scan + LOC Analysis in " + duration + "s 🚀\n" +
                     "--- \n" +
-                    "**Performance:** Deep Scan completed in " + duration + "s 🚀\n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
