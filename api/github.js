@@ -24,43 +24,51 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Lines | Logic | Score |\n| :--- | :--- | :--- | :--- |\n";
+    let tableRows = "| File | Score | Style | Logic |\n| :--- | :--- | :--- | :--- |\n";
     let totalDeductions = 0;
-    const hasTestFile = filesRes.data.some(f => f.filename.match(/test|spec/));
+    let styleWarnings = 0;
 
     for (const file of supportedFiles) {
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
+        const parsed = parseFile(file.filename, content);
         
         let fileScore = 100;
-        const loc = content.split('\n').length;
-        const hasSecret = /password|secret|api_key/i.test(content);
-        const hasNesting = content.includes('                ');
         
-        if (hasSecret) { fileScore -= 50; totalDeductions += 50; }
-        if (!hasTestFile) { fileScore -= 20; totalDeductions += 20; }
-        if (hasNesting) { fileScore -= 10; totalDeductions += 10; }
-        if (loc > 300) { fileScore -= 10; totalDeductions += 10; }
+        // Logic: Consistency Check
+        const isJS = file.filename.match(/\.[jt]sx?$/);
+        const hasSnakeCase = /[a-z]+_[a-z]+/.test(content);
+        
+        let styleStatus = "✅ Uniform";
+        if (isJS && hasSnakeCase) {
+            styleStatus = "⚠️ Mixed";
+            fileScore -= 10;
+            styleWarnings++;
+        }
 
+        if (content.includes('password') || content.includes('api_key')) fileScore -= 50;
+        if (content.includes('                ')) fileScore -= 10;
+
+        totalDeductions += (100 - fileScore);
         const color = fileScore > 80 ? "🟢" : (fileScore > 50 ? "🟡" : "🔴");
-        tableRows += "| `" + file.filename + "` | " + loc + " | " + (hasNesting ? "Complex" : "Simple") + " | " + color + " " + Math.max(0, fileScore) + "% |\n";
+        tableRows += "| `" + file.filename + "` | " + color + " " + Math.max(0, fileScore) + "% | " + styleStatus + " | " + (parsed.exports.length > 8 ? "Complex" : "Simple") + " |\n";
       } catch (e) { }
     }
 
     const finalHealth = Math.max(0, 100 - (totalDeductions / supportedFiles.length));
-    let verdict = finalHealth > 80 ? "✅ **EXCELLENT**" : (finalHealth > 60 ? "⚠️ **STABLE**" : "❌ **CRITICAL**");
-    
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
     const comment = "# ⚡ ACIE Health Score: " + Math.round(finalHealth) + "%\n" +
-                    "### 📊 Verdict: " + verdict + "\n\n" +
-                    "### 📁 File-by-File Analysis\n" + tableRows + "\n" +
-                    "**Performance:** Health Scan finished in " + duration + "s 🚀\n" +
+                    "### 🧠 Style Audit\n" + 
+                    (styleWarnings > 0 ? "- ⚠️ **Convention Warning:** Detected mixed naming styles (Snake Case in JS). Consider sticking to camelCase." : "- ✅ **Style Consistent:** Naming conventions look correct for this language stack.") + "\n\n" +
+                    "### 📁 Analysis Detail\n" + tableRows + "\n" +
+                    "**Performance:** Health + Style Audit in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE Intelligence](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
-    return res.status(200).json({ status: 'success', health: finalHealth });
+    return res.status(200).json({ status: 'success' });
   } catch (err) {
     return res.status(200).json({ status: 'error' });
   }
