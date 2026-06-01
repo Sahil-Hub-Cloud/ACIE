@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { parseFile } from '../src/parser/parser.js';
 
 export default async function handler(req, res) {
   const startTime = Date.now();
@@ -24,7 +23,7 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Score | Style | Logic |\n| :--- | :--- | :--- | :--- |\n";
+    let tableRows = "| File | Score | Style | Complexity |\n| :--- | :--- | :--- | :--- |\n";
     let totalDeductions = 0;
     let styleWarnings = 0;
 
@@ -32,14 +31,12 @@ export default async function handler(req, res) {
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        const parsed = parseFile(file.filename, content);
         
         let fileScore = 100;
         
-        // Logic: Consistency Check
+        // Style Check
         const isJS = file.filename.match(/\.[jt]sx?$/);
         const hasSnakeCase = /[a-z]+_[a-z]+/.test(content);
-        
         let styleStatus = "✅ Uniform";
         if (isJS && hasSnakeCase) {
             styleStatus = "⚠️ Mixed";
@@ -47,12 +44,18 @@ export default async function handler(req, res) {
             styleWarnings++;
         }
 
+        // Complexity Check (Cyclomatic)
+        const conditions = (content.match(/if|else|for|while|&&|\|\|/g) || []).length;
+        let complexityStatus = conditions > 20 ? "🔴 High" : (conditions > 10 ? "🟡 Medium" : "🟢 Low");
+        if (conditions > 20) { fileScore -= 15; }
+
+        // Security / Best Practice Check
         if (content.includes('password') || content.includes('api_key')) fileScore -= 50;
         if (content.includes('                ')) fileScore -= 10;
 
         totalDeductions += (100 - fileScore);
         const color = fileScore > 80 ? "🟢" : (fileScore > 50 ? "🟡" : "🔴");
-        tableRows += "| `" + file.filename + "` | " + color + " " + Math.max(0, fileScore) + "% | " + styleStatus + " | " + (parsed.exports.length > 8 ? "Complex" : "Simple") + " |\n";
+        tableRows += "| `" + file.filename + "` | " + color + " " + Math.max(0, fileScore) + "% | " + styleStatus + " | " + complexityStatus + " (" + conditions + ") |\n";
       } catch (e) { }
     }
 
@@ -60,10 +63,11 @@ export default async function handler(req, res) {
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     const comment = "# ⚡ ACIE Health Score: " + Math.round(finalHealth) + "%\n" +
-                    "### 🧠 Style Audit\n" + 
-                    (styleWarnings > 0 ? "- ⚠️ **Convention Warning:** Detected mixed naming styles (Snake Case in JS). Consider sticking to camelCase." : "- ✅ **Style Consistent:** Naming conventions look correct for this language stack.") + "\n\n" +
+                    "### 🧠 Style & Complexity Audit\n" + 
+                    (styleWarnings > 0 ? "- ⚠️ **Convention Warning:** Detected mixed naming styles (Snake Case in JS). Consider sticking to camelCase.\n" : "- ✅ **Style Consistent:** Naming conventions look correct for this language stack.\n") +
+                    "- 🔍 **Complexity:** Measured decision points (if/else/loops) per file.\n\n" +
                     "### 📁 Analysis Detail\n" + tableRows + "\n" +
-                    "**Performance:** Health + Style Audit in " + duration + "s 🚀\n" +
+                    "**Performance:** Deep Scan finished in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE Intelligence](https://acie-gamma.vercel.app)*";
 
