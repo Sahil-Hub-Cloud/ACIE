@@ -24,46 +24,44 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Type | Logic | Maintainability |\n| :--- | :--- | :--- | :--- |\n";
-    let globalRiskPoints = 0;
-    let antiPatternsFound = 0;
+    let tableRows = "| File | Lines | Logic | Score |\n| :--- | :--- | :--- | :--- |\n";
+    let totalDeductions = 0;
+    const hasTestFile = filesRes.data.some(f => f.filename.match(/test|spec/));
 
     for (const file of supportedFiles) {
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         
-        // Logic: Scan for deep nesting (lines starting with 16+ spaces or 4+ tabs)
-        const lines = content.split('\n');
-        const deepLines = lines.filter(line => line.startsWith('                ') || line.startsWith('\t\t\t\t')).length;
+        let fileScore = 100;
+        const loc = content.split('\n').length;
+        const hasSecret = /password|secret|api_key/i.test(content);
+        const hasNesting = content.includes('                ');
         
-        const hasAntiPattern = deepLines > 0;
-        if (hasAntiPattern) {
-            globalRiskPoints += 15;
-            antiPatternsFound++;
-        }
+        if (hasSecret) { fileScore -= 50; totalDeductions += 50; }
+        if (!hasTestFile) { fileScore -= 20; totalDeductions += 20; }
+        if (hasNesting) { fileScore -= 10; totalDeductions += 10; }
+        if (loc > 300) { fileScore -= 10; totalDeductions += 10; }
 
-        const ext = file.filename.split('.').pop().toUpperCase();
-        const status = hasAntiPattern ? "🟠 Deep Nesting" : "✅ Modular";
-
-        tableRows += "| `" + file.filename + "` | " + ext + " | " + (hasAntiPattern ? "Complex" : "Clean") + " | " + status + " |\n";
+        const color = fileScore > 80 ? "🟢" : (fileScore > 50 ? "🟡" : "🔴");
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + (hasNesting ? "Complex" : "Simple") + " | " + color + " " + Math.max(0, fileScore) + "% |\n";
       } catch (e) { }
     }
 
-    let verdict = globalRiskPoints >= 50 ? "❌ **DO NOT MERGE**" : (globalRiskPoints >= 20 ? "⚠️ **PROCEED WITH CAUTION**" : "✅ **SAFE TO MERGE**");
+    const finalHealth = Math.max(0, 100 - (totalDeductions / supportedFiles.length));
+    let verdict = finalHealth > 80 ? "✅ **EXCELLENT**" : (finalHealth > 60 ? "⚠️ **STABLE**" : "❌ **CRITICAL**");
+    
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-
-    const comment = "# ⚡ ACIE Verdict: " + verdict + "\n" +
-                    "### 🧠 Anti-Pattern Report\n" + 
-                    (antiPatternsFound > 0 ? "- ⚠️ **Complexity Alert:** Found deeply nested logic blocks. Consider flattening the code using guard clauses." : "- ✅ **Logic Flow:** No significant deep nesting detected. Code is readable.") + "\n\n" +
-                    "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
-                    "**Performance:** Anti-Pattern Scanner finished in " + duration + "s 🚀\n" +
+    const comment = "# ⚡ ACIE Health Score: " + Math.round(finalHealth) + "%\n" +
+                    "### 📊 Verdict: " + verdict + "\n\n" +
+                    "### 📁 File-by-File Analysis\n" + tableRows + "\n" +
+                    "**Performance:** Health Scan finished in " + duration + "s 🚀\n" +
                     "--- \n" +
-                    "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
+                    "*Powered by [ACIE Intelligence](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: 'success', health: finalHealth });
   } catch (err) {
-    return res.status(200).json({ status: 'error_logged' });
+    return res.status(200).json({ status: 'error' });
   }
 }
