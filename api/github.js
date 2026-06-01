@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
     let tableRows = "| File | Lines | Debt | Quality |\n| :--- | :--- | :--- | :--- |\n";
     let globalRiskPoints = 0;
-    let totalDebtFound = 0;
+    let findings = []; // NEW: Store human-readable insights
     const hasTestFile = filesRes.data.some(f => f.filename.match(/test|spec/));
 
     for (const file of supportedFiles) {
@@ -38,49 +38,47 @@ export default async function handler(req, res) {
         
         const loc = content.split('\n').length;
         const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
-        
-        // NEW: Technical Debt Detection
-        const debtMatches = content.match(/TODO|FIXME|HACK|OPTIMIZE/g) || [];
-        const debtCount = debtMatches.length;
-        totalDebtFound += debtCount;
-        
+        const debtMatches = content.match(/TODO|FIXME|HACK/g) || [];
         const isTest = file.filename.match(/test|spec/);
         
-        if (hasSecret) globalRiskPoints += 50;
-        if (loc > 300) globalRiskPoints += 10;
-        if (!hasTestFile && !isTest) globalRiskPoints += 20;
-        if (debtCount > 2) globalRiskPoints += 5; // Extra risk for too many TODOs
+        if (hasSecret) { 
+           globalRiskPoints += 50; 
+           findings.push("🚨 **Critical:** Hardcoded secret detected in `" + file.filename + "`.");
+        }
+        if (loc > 300) {
+           globalRiskPoints += 10;
+           findings.push("📏 **Bloat:** `" + file.filename + "` is quite large (" + loc + " lines).");
+        }
+        if (!hasTestFile && !isTest) {
+           globalRiskPoints += 10;
+           findings.push("🧪 **Quality:** `" + file.filename + "` lacks dedicated test coverage in this PR.");
+        }
+        if (debtMatches.length > 3) {
+           findings.push("📝 **Debt:** High number of TODOs/FIXMEs in `" + file.filename + "`.");
+        }
 
-        tableRows += "| `" + file.filename + "` | " + loc + " | " + (debtCount > 0 ? "⚠️ " + debtCount + " items" : "✅ None") + " | " + (hasTestFile || isTest ? "✅" : "❌") + " |\n";
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + (debtMatches.length > 0 ? "⚠️" : "✅") + " | " + (hasTestFile || isTest ? "✅" : "❌") + " |\n";
       } catch (e) { }
     }
 
-    const isWIP = /wip|draft|experimental/i.test(prTitle);
-    const isUrgent = /urgent|hotfix|fix!|emergency/i.test(prTitle);
-    
-    if (isWIP) globalRiskPoints = Math.max(0, globalRiskPoints - 30);
+    const isUrgent = /urgent|hotfix/i.test(prTitle);
+    const isWIP = /wip|draft/i.test(prTitle);
     if (isUrgent) globalRiskPoints += 10;
+    if (isWIP) globalRiskPoints = Math.max(0, globalRiskPoints - 30);
 
     let verdict = globalRiskPoints >= 50 ? "❌ **DO NOT MERGE**" : (globalRiskPoints >= 20 ? "⚠️ **PROCEED WITH CAUTION**" : "✅ **SAFE TO MERGE**");
-    let label = globalRiskPoints >= 50 ? "acie:high-risk" : (globalRiskPoints >= 20 ? "acie:caution" : "acie:safe");
-    
-    if (isUrgent) { verdict = "🚨 **URGENT: " + verdict + "**"; label = "acie:urgent"; }
-    if (isWIP) { verdict = "🚧 **DRAFT: " + verdict + "**"; label = "acie:wip"; }
+    if (isUrgent) verdict = "🚨 **URGENT: " + verdict + "**";
+    if (isWIP) verdict = "🚧 **DRAFT: " + verdict + "**";
 
-    try {
-      await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/labels", { labels: [label] }, { headers });
-    } catch (labelErr) { }
+    // NEW: Summary Section logic
+    let summaryText = findings.length > 0 ? findings.slice(0, 3).join("\n") : "✅ No major issues detected in this analysis.";
+    if (findings.length > 3) summaryText += "\n*+ " + (findings.length - 3) + " more findings...*";
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    let debtAdvice = totalDebtFound > 0 
-       ? "> 📝 **Technical Debt:** Found " + totalDebtFound + " TODO/FIXME items. Don't forget to track these!" 
-       : "> ✅ **Debt Clean:** No outstanding TODOs found in changed files.";
-
-    const comment = "# ⚡ ACIE Verdict: " + verdict + "\n" +
-                    "> **Analysis Intelligence:** Technical Debt tracking active.\n\n" +
+    const comment = "# ⚡ ACIE Verdict: " + verdict + "\n\n" +
+                    "### 🧠 Key Findings\n" + summaryText + "\n\n" +
                     "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
-                    debtAdvice + "\n\n" +
-                    "**Performance:** Debt Scan + AI Audit in " + duration + "s 🚀\n" +
+                    "**Performance:** Intelligence Audit in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
