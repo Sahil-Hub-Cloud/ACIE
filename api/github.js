@@ -24,8 +24,8 @@ export default async function handler(req, res) {
 
     if (changedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Lines | Structure | Risk |\n| :--- | :--- | :--- | :--- |\n";
-    let bloatedFiles = [];
+    let tableRows = "| File | Lines | Security | Risk |\n| :--- | :--- | :--- | :--- |\n";
+    let securityAlerts = [];
     
     for (const file of changedFiles) {
       try {
@@ -33,27 +33,29 @@ export default async function handler(req, res) {
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         const parsed = parseFile(file.filename, content);
         
-        // Logic: Count lines of code
-        const loc = content.split('\n').length;
-        const complexity = parsed.exports.length > 8 || loc > 300 ? "🔴 High" : "🟢 Low";
-        
-        if (loc > 300) bloatedFiles.push(file.filename);
+        // Logic: Search for hardcoded secrets or sensitive keywords
+        const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
+        const securityStatus = hasSecret ? "🚨 **Warning**" : "✅ Clean";
+        if (hasSecret) securityAlerts.push(file.filename);
 
-        tableRows += "| `" + file.filename + "` | " + loc + " | " + parsed.exports.length + " units | " + complexity + " |\n";
+        const loc = content.split('\n').length;
+        const complexity = parsed.exports.length > 8 || loc > 300 || hasSecret ? "🔴 High" : "🟢 Low";
+
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + securityStatus + " | " + complexity + " |\n";
       } catch (e) {
         tableRows += "| `" + file.filename + "` | - | - | ⚠️ Skipped |\n";
       }
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    let advice = bloatedFiles.length > 0 
-      ? "> ⚠️ **Bloat Warning:** Files like `" + bloatedFiles[0] + "` are getting large (>300 lines). Consider refactoring." 
-      : "> ✅ **Clean Code:** All changed files are within healthy size limits.";
+    let securityAdvice = securityAlerts.length > 0 
+      ? "> 🚨 **Security Alert:** Possible hardcoded secrets or keys found in `" + securityAlerts[0] + "`. Please review immediately!" 
+      : "> 🛡️ **Security Scan:** No common secrets or tokens detected in changed lines.";
 
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 📊 Code Health Summary\n" + tableRows + "\n" +
-                    advice + "\n\n" +
-                    "**Performance:** Deep Scan + LOC Analysis in " + duration + "s 🚀\n" +
+                    "### 📊 Automated Audit Summary\n" + tableRows + "\n" +
+                    securityAdvice + "\n\n" +
+                    "**Performance:** Audit completed in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
