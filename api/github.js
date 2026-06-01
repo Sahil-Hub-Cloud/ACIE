@@ -20,40 +20,49 @@ export default async function handler(req, res) {
 
   try {
     const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py)$/));
+    const changedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py)$/));
 
-    if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
+    if (changedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Type | Structure | Risk |\n| :--- | :--- | :--- | :--- |\n";
-    let highComplexityFound = false;
+    const changedNames = changedFiles.map(f => f.filename.split('/').pop().replace(/\.(js|ts|jsx|tsx|py)$/, ''));
     
-    for (const file of supportedFiles) {
-      const ext = file.filename.split('.').pop().toUpperCase();
-      try {
-        const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
-        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        const parsed = parseFile(file.filename, content);
-        
-        // Smart Logic: Flag files with > 8 exports/functions as High Complexity
-        const complexity = parsed.exports.length > 8 ? "🔴 High" : "🟢 Low";
-        if (parsed.exports.length > 8) highComplexityFound = true;
+    // 1. Get the entire repo tree to find dependencies
+    const treeRes = await axios.get("https://api.github.com/repos/" + repo + "/git/trees/" + headSha + "?recursive=1", { headers });
+    const allRepoFiles = treeRes.data.tree.filter(f => f.type === 'blob' && f.path.match(/\.(js|ts|jsx|tsx|py)$/));
 
-        tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " units | " + complexity + " |\n";
-      } catch (e) {
-        tableRows += "| `" + file.filename + "` | " + ext + " | - | ⚠️ Skipped |\n";
-      }
+    const impactZone = new Set();
+    
+    // 2. Deep Scan: Check every file in the repo
+    for (const repoFile of allRepoFiles) {
+      if (changedFiles.find(f => f.filename === repoFile.path)) continue; // Skip files already in the PR
+      
+      try {
+        const fileContentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + repoFile.path + "?ref=" + headSha, { headers });
+        const content = Buffer.from(fileContentRes.data.content, 'base64').toString('utf-8');
+        const parsed = parseFile(repoFile.path, content);
+        
+        // Check if this repo file imports any of our changed files
+        for (const imp of parsed.imports) {
+           if (changedNames.some(name => imp.from.includes(name))) {
+             impactZone.add(repoFile.path);
+           }
+        }
+      } catch (e) { /* skip files that fail to download */ }
     }
 
+    // 3. Build Report
+    let impactList = impactZone.size > 0 
+      ? Array.from(impactZone).map(f => "- `" + f + "`").join("\n")
+      : "✅ No external files affected.";
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    let recommendation = highComplexityFound 
-      ? "> 💡 **Advice:** Some files have high complexity. Consider breaking them into smaller modules." 
-      : "> ✅ **Advice:** Code structure looks clean and modular.";
+    const riskBadge = impactZone.size > 5 ? "🔴 HIGH" : (impactZone.size > 0 ? "🟡 MEDIUM" : "🟢 LOW");
 
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 📊 Analysis Summary\n" + tableRows + "\n" +
-                    recommendation + "\n\n" +
-                    "**Performance:** Analyzed in " + duration + "s 🚀\n" +
+                    "### 🎯 Risk Assessment: " + riskBadge + "\n" +
+                    "**Impact Zone (Files that might break):**\n" + impactList + "\n\n" +
                     "--- \n" +
+                    "**Performance:** Deep Scan completed in " + duration + "s 🚀\n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
