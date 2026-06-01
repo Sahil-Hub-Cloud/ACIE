@@ -26,6 +26,8 @@ export default async function handler(req, res) {
     let tableRows = "| File | Score | Style | Complexity |\n| :--- | :--- | :--- | :--- |\n";
     let totalDeductions = 0;
     let styleWarnings = 0;
+    let securityRisk = false;
+    let complexLogic = false;
 
     for (const file of supportedFiles) {
       try {
@@ -47,10 +49,10 @@ export default async function handler(req, res) {
         // Complexity Check (Cyclomatic)
         const conditions = (content.match(/if|else|for|while|&&|\|\|/g) || []).length;
         let complexityStatus = conditions > 20 ? "🔴 High" : (conditions > 10 ? "🟡 Medium" : "🟢 Low");
-        if (conditions > 20) { fileScore -= 15; }
+        if (conditions > 20) { fileScore -= 15; complexLogic = true; }
 
         // Security / Best Practice Check
-        if (content.includes('password') || content.includes('api_key')) fileScore -= 50;
+        if (content.includes('password') || content.includes('api_key')) { fileScore -= 50; securityRisk = true; }
         if (content.includes('                ')) fileScore -= 10;
 
         totalDeductions += (100 - fileScore);
@@ -61,6 +63,17 @@ export default async function handler(req, res) {
 
     const finalHealth = Math.max(0, 100 - (totalDeductions / supportedFiles.length));
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    // AUTO-LABELING LOGIC
+    const labels = [];
+    if (securityRisk) labels.push('security-risk');
+    if (styleWarnings > 0) labels.push('style-violation');
+    if (complexLogic) labels.push('needs-refactoring');
+    if (finalHealth > 80) labels.push('ready-to-merge');
+    
+    if (labels.length > 0) {
+      await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/labels", { labels: labels }, { headers });
+    }
 
     const comment = "# ⚡ ACIE Health Score: " + Math.round(finalHealth) + "%\n" +
                     "### 🧠 Style & Complexity Audit\n" + 
