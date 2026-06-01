@@ -1,1 +1,4 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send('<html><head><title>ACIE Dashboard</title></head><body style="background:#080c14;color:#fff;font-family:sans-serif;padding:40px"><h1 style="color:#58a6ff">ACIE Dashboard</h1><p style="color:#8b949e">Status: Live and monitoring your PRs</p></body></html>');}
+export default async function handler(req,res){
+res.setHeader('Content-Type','text/html');
+return res.status(200).send(h);
+}
