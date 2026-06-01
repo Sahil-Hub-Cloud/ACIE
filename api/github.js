@@ -21,13 +21,22 @@ export default async function handler(req, res) {
 
   try {
     const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go)$/));
+    
+    // NEW: Calculate Total Change Size
+    let totalAdditions = 0;
+    let totalDeletions = 0;
+    filesRes.data.forEach(f => {
+       totalAdditions += f.additions;
+       totalDeletions += f.deletions;
+    });
+    const totalChanges = totalAdditions + totalDeletions;
 
+    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go)$/));
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
     let tableRows = "| File | Lines | Debt | Quality |\n| :--- | :--- | :--- | :--- |\n";
     let globalRiskPoints = 0;
-    let findings = []; // NEW: Store human-readable insights
+    let findings = [];
     const hasTestFile = filesRes.data.some(f => f.filename.match(/test|spec/));
 
     for (const file of supportedFiles) {
@@ -35,48 +44,29 @@ export default async function handler(req, res) {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         const parsed = parseFile(file.filename, content);
-        
         const loc = content.split('\n').length;
         const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
-        const debtMatches = content.match(/TODO|FIXME|HACK/g) || [];
-        const isTest = file.filename.match(/test|spec/);
+        const debtCount = (content.match(/TODO|FIXME/g) || []).length;
         
-        if (hasSecret) { 
-           globalRiskPoints += 50; 
-           findings.push("🚨 **Critical:** Hardcoded secret detected in `" + file.filename + "`.");
-        }
-        if (loc > 300) {
-           globalRiskPoints += 10;
-           findings.push("📏 **Bloat:** `" + file.filename + "` is quite large (" + loc + " lines).");
-        }
-        if (!hasTestFile && !isTest) {
-           globalRiskPoints += 10;
-           findings.push("🧪 **Quality:** `" + file.filename + "` lacks dedicated test coverage in this PR.");
-        }
-        if (debtMatches.length > 3) {
-           findings.push("📝 **Debt:** High number of TODOs/FIXMEs in `" + file.filename + "`.");
-        }
+        if (hasSecret) { globalRiskPoints += 50; findings.push("🚨 **Critical:** Hardcoded secret found."); }
+        if (loc > 300) globalRiskPoints += 5;
 
-        tableRows += "| `" + file.filename + "` | " + loc + " | " + (debtMatches.length > 0 ? "⚠️" : "✅") + " | " + (hasTestFile || isTest ? "✅" : "❌") + " |\n";
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + (debtCount > 0 ? "⚠️" : "✅") + " | " + (hasTestFile ? "✅" : "❌") + " |\n";
       } catch (e) { }
     }
 
-    const isUrgent = /urgent|hotfix/i.test(prTitle);
-    const isWIP = /wip|draft/i.test(prTitle);
-    if (isUrgent) globalRiskPoints += 10;
-    if (isWIP) globalRiskPoints = Math.max(0, globalRiskPoints - 30);
+    // Determine Review Effort
+    let effort = "☕ Quick Review";
+    if (totalChanges > 500) { effort = "🍱 Deep Focus Required"; globalRiskPoints += 20; }
+    else if (totalChanges > 100) { effort = "🧘 Standard Review"; globalRiskPoints += 5; }
 
     let verdict = globalRiskPoints >= 50 ? "❌ **DO NOT MERGE**" : (globalRiskPoints >= 20 ? "⚠️ **PROCEED WITH CAUTION**" : "✅ **SAFE TO MERGE**");
-    if (isUrgent) verdict = "🚨 **URGENT: " + verdict + "**";
-    if (isWIP) verdict = "🚧 **DRAFT: " + verdict + "**";
-
-    // NEW: Summary Section logic
-    let summaryText = findings.length > 0 ? findings.slice(0, 3).join("\n") : "✅ No major issues detected in this analysis.";
-    if (findings.length > 3) summaryText += "\n*+ " + (findings.length - 3) + " more findings...*";
-
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    const comment = "# ⚡ ACIE Verdict: " + verdict + "\n\n" +
-                    "### 🧠 Key Findings\n" + summaryText + "\n\n" +
+
+    const comment = "# ⚡ ACIE Verdict: " + verdict + "\n" +
+                    "### 🧠 Executive Insights\n" + 
+                    "- **Review Effort:** " + effort + " (" + totalChanges + " lines changed)\n" +
+                    "- **Key Finding:** " + (findings.length > 0 ? findings[0] : "Code structure is clean.") + "\n\n" +
                     "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
                     "**Performance:** Intelligence Audit in " + duration + "s 🚀\n" +
                     "--- \n" +
