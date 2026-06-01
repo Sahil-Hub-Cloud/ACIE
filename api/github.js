@@ -20,15 +20,17 @@ export default async function handler(req, res) {
 
   try {
     const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const changedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py)$/));
+    
+    // UPDATED: Now includes .go in the supported files list!
+    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go)$/));
 
-    if (changedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
+    if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
     let tableRows = "| File | Lines | Security | Quality |\n| :--- | :--- | :--- | :--- |\n";
     let globalRiskPoints = 0;
-    const hasTestFile = filesRes.data.some(f => f.filename.includes('test') || f.filename.includes('spec'));
+    const hasTestFile = filesRes.data.some(f => f.filename.match(/test|spec/));
 
-    for (const file of changedFiles) {
+    for (const file of supportedFiles) {
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
@@ -36,8 +38,7 @@ export default async function handler(req, res) {
         
         const loc = content.split('\n').length;
         const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
-        // FIXED THE BUG BELOW (changed f to file)
-        const isTest = file.filename.includes('test') || file.filename.includes('spec');
+        const isTest = file.filename.match(/test|spec/);
         
         if (hasSecret) globalRiskPoints += 50;
         if (loc > 300) globalRiskPoints += 10;
@@ -58,17 +59,16 @@ export default async function handler(req, res) {
       label = "acie:caution";
     }
 
-    // NEW: Auto-Labeling the PR
     try {
       await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/labels", { labels: [label] }, { headers });
-    } catch (labelErr) { /* ignore if label fails */ }
+    } catch (labelErr) { }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     const comment = "# ⚡ ACIE Executive Verdict: " + verdict + "\n\n" +
-                    "> AI has calculated a Risk Score of **" + globalRiskPoints + "** for this PR.\n\n" +
+                    "> Analysis Complete: JS/TS, Python, and Go support active. 🚀\n\n" +
                     "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
-                    "**Performance:** AI Decision Engine optimized in " + duration + "s 🚀\n" +
+                    "**Performance:** AI Decision Engine optimized in " + duration + "s\n" +
                     "--- \n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
