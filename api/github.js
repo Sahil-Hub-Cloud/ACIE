@@ -2,7 +2,7 @@ import axios from 'axios';
 import { parseFile } from '../src/parser/parser.js';
 
 export default async function handler(req, res) {
-  const startTime = Date.now(); // Start the clock
+  const startTime = Date.now();
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE is running' });
 
   const event = req.headers['x-github-event'];
@@ -24,7 +24,8 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Type | Exports | Status |\n| :--- | :--- | :--- | :--- |\n";
+    let tableRows = "| File | Type | Structure | Risk |\n| :--- | :--- | :--- | :--- |\n";
+    let highComplexityFound = false;
     
     for (const file of supportedFiles) {
       const ext = file.filename.split('.').pop().toUpperCase();
@@ -32,17 +33,26 @@ export default async function handler(req, res) {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         const parsed = parseFile(file.filename, content);
-        tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " | ✅ Analyzed |\n";
+        
+        // Smart Logic: Flag files with > 8 exports/functions as High Complexity
+        const complexity = parsed.exports.length > 8 ? "🔴 High" : "🟢 Low";
+        if (parsed.exports.length > 8) highComplexityFound = true;
+
+        tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " units | " + complexity + " |\n";
       } catch (e) {
         tableRows += "| `" + file.filename + "` | " + ext + " | - | ⚠️ Skipped |\n";
       }
     }
 
-    const duration = ((Date.now() - startTime) / 1000).toFixed(2); // Calculate time
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    let recommendation = highComplexityFound 
+      ? "> 💡 **Advice:** Some files have high complexity. Consider breaking them into smaller modules." 
+      : "> ✅ **Advice:** Code structure looks clean and modular.";
 
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 📊 Analysis Summary\n" + tableRows + 
-                    "\n\n**Performance:** Analyzed in " + duration + "s 🚀\n" +
+                    "### 📊 Analysis Summary\n" + tableRows + "\n" +
+                    recommendation + "\n\n" +
+                    "**Performance:** Analyzed in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
