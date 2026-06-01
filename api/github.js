@@ -23,35 +23,37 @@ export default async function handler(req, res) {
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let filesSummary = "";
+    // Build a professional Markdown Table
+    let tableRows = "| File | Type | Exports | Status |\n| :--- | :--- | :--- | :--- |\n";
     
     for (const file of supportedFiles) {
+      const ext = file.filename.split('.').pop().toUpperCase();
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         
-        // The Safety Shield: try to parse, but don't crash if it fails
         try {
           const parsed = parseFile(file.filename, content);
-          filesSummary += "- `" + file.filename + "` (" + parsed.exports.length + " exports found)\n";
-        } catch (parseError) {
-          filesSummary += "- `" + file.filename + "` (⚠️ Could not parse structure)\n";
+          tableRows += "| `" + file.filename + "` | " + ext + " | " + parsed.exports.length + " | ✅ Analyzed |\n";
+        } catch (e) {
+          tableRows += "| `" + file.filename + "` | " + ext + " | - | ⚠️ Parsing Error |\n";
         }
       } catch (e) {
-        filesSummary += "- `" + file.filename + "` (❌ Could not download file)\n";
+        tableRows += "| `" + file.filename + "` | " + ext + " | - | ❌ Download Failed |\n";
       }
     }
 
     const comment = "## ⚡ ACIE — Change Impact Report\n\n" +
-                    "### 📁 Analysis Summary\n" + filesSummary + 
-                    "\n\n**Status:** Safety Shield Active. The engine is now crash-resistant. 🛡️";
+                    "> Automated codebase analysis for **" + repo + "**\n\n" +
+                    "### 📊 Analysis Summary\n" + tableRows + 
+                    "\n\n**Recommendation:** review the exports above for unexpected breaking changes.\n" +
+                    "--- \n" +
+                    "*Powered by [ACIE Dashboard](https://acie-gamma.vercel.app/dashboard)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    // Even if the whole thing fails, we log it instead of crashing the server
-    console.error("ACIE Engine Error:", err.message);
     return res.status(200).json({ status: 'error_logged' });
   }
 }
