@@ -36,23 +36,32 @@ export default async function handler(req, res) {
         
         const loc = content.split('\n').length;
         const hasSecret = /password|secret|api_key|token|auth_key/i.test(content);
-        const isTest = file.filename.includes('test') || f.filename.includes('spec');
+        // FIXED THE BUG BELOW (changed f to file)
+        const isTest = file.filename.includes('test') || file.filename.includes('spec');
         
-        // Calculate Risk Points
         if (hasSecret) globalRiskPoints += 50;
         if (loc > 300) globalRiskPoints += 10;
         if (!hasTestFile && !isTest) globalRiskPoints += 20;
         if (parsed.exports.length > 10) globalRiskPoints += 10;
 
-        tableRows += "| `" + file.filename + "` | " + loc + " | " + (hasSecret ? "🚨" : "✅") + " | " + (hasTestFile ? "✅" : "❌") + " |\n";
+        tableRows += "| `" + file.filename + "` | " + loc + " | " + (hasSecret ? "🚨" : "✅") + " | " + (hasTestFile || isTest ? "✅" : "❌") + " |\n";
       } catch (e) { }
     }
 
-    // Determine Executive Verdict
     let verdict = "✅ **SAFE TO MERGE**";
-    let color = "green";
-    if (globalRiskPoints >= 50) { verdict = "❌ **DO NOT MERGE**"; color = "red"; }
-    else if (globalRiskPoints >= 20) { verdict = "⚠️ **PROCEED WITH CAUTION**"; color = "yellow"; }
+    let label = "acie:safe";
+    if (globalRiskPoints >= 50) { 
+      verdict = "❌ **DO NOT MERGE**"; 
+      label = "acie:high-risk";
+    } else if (globalRiskPoints >= 20) { 
+      verdict = "⚠️ **PROCEED WITH CAUTION**"; 
+      label = "acie:caution";
+    }
+
+    // NEW: Auto-Labeling the PR
+    try {
+      await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/labels", { labels: [label] }, { headers });
+    } catch (labelErr) { /* ignore if label fails */ }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
@@ -61,11 +70,11 @@ export default async function handler(req, res) {
                     "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
                     "**Performance:** AI Decision Engine optimized in " + duration + "s 🚀\n" +
                     "--- \n" +
-                    "*Powered by [Sahil's ACIE Engine](https://acie-gamma.vercel.app)*";
+                    "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
     await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
 
-    return res.status(200).json({ status: 'success', riskScore: globalRiskPoints });
+    return res.status(200).json({ status: 'success' });
   } catch (err) {
     return res.status(200).json({ status: 'error_logged' });
   }
