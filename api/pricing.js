@@ -1,100 +1,46 @@
 export default async function handler(req, res) {
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ACIE — Pricing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; }
-    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
-    .header h1 { color: #58a6ff; font-size: 24px; }
-    .nav a { color: #58a6ff; text-decoration: none; margin-left: 20px; font-size: 14px; }
-    .hero { text-align: center; padding: 60px 40px; }
-    .hero h2 { font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 16px; }
-    .hero p { color: #8b949e; font-size: 18px; }
-    .plans { display: flex; gap: 24px; max-width: 900px; margin: 40px auto; padding: 0 24px; justify-content: center; }
-    .plan { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 32px; flex: 1; }
-    .plan.popular { border-color: #58a6ff; position: relative; }
-    .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #58a6ff; color: #000; font-size: 12px; font-weight: 700; padding: 4px 16px; border-radius: 20px; }
-    .plan-name { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-    .plan-price { font-size: 40px; font-weight: 800; color: #58a6ff; margin-bottom: 4px; }
-    .plan-price span { font-size: 16px; color: #8b949e; }
-    .plan-desc { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
-    .plan-features { list-style: none; margin-bottom: 32px; }
-    .plan-features li { color: #c9d1d9; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #21262d; }
-    .plan-features li::before { content: "✅ "; }
-    .btn { display: block; text-align: center; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; width: 100%; }
-    .btn-primary { background: #238636; color: #fff; }
-    .btn-outline { background: transparent; color: #58a6ff; border: 1px solid #58a6ff; }
-    .footer { text-align: center; padding: 40px; color: #484f58; font-size: 14px; border-top: 1px solid #21262d; margin-top: 60px; }
-    .footer a { color: #58a6ff; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>⚡ ACIE</h1>
-    <div class="nav">
-      <a href="/">Home</a>
-      <a href="/dashboard">Dashboard</a>
-      <a href="/history">PR History</a>
-    </div>
-  </div>
-  <div class="hero">
-    <h2>Simple, transparent pricing</h2>
-    <p>Start free. Upgrade when you need more.</p>
-  </div>
-  <div class="plans">
-    <div class="plan">
-      <div class="plan-name">Free</div>
-      <div class="plan-price">$0 <span>/month</span></div>
-      <div class="plan-desc">Perfect for solo developers</div>
-      <ul class="plan-features">
-        <li>1 GitHub repository</li>
-        <li>Blast radius detection</li>
-        <li>Risk scoring</li>
-        <li>PR comments</li>
-        <li>50 PRs per month</li>
-      </ul>
-      <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="btn btn-outline">Get Started Free</a>
-    </div>
-    <div class="plan popular">
-      <div class="popular-badge">MOST POPULAR</div>
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">$29 <span>/month</span></div>
-      <div class="plan-desc">For growing teams</div>
-      <ul class="plan-features">
-        <li>10 GitHub repositories</li>
-        <li>Blast radius detection</li>
-        <li>Risk scoring</li>
-        <li>PR comments</li>
-        <li>Slack notifications</li>
-        <li>Unlimited PRs</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="mailto:sahilshaik4679@gmail.com" class="btn btn-primary">Start Pro Trial</a>
-    </div>
-    <div class="plan">
-      <div class="plan-name">Enterprise</div>
-      <div class="plan-price">$99 <span>/month</span></div>
-      <div class="plan-desc">For large organizations</div>
-      <ul class="plan-features">
-        <li>Unlimited repositories</li>
-        <li>Blast radius detection</li>
-        <li>Risk scoring</li>
-        <li>PR comments</li>
-        <li>Slack & email notifications</li>
-        <li>Unlimited PRs</li>
-        <li>Custom integrations</li>
-        <li>Dedicated support</li>
-      </ul>
-      <a href="mailto:sahilshaik4679@gmail.com" class="btn btn-outline">Contact Us</a>
-    </div>
-  </div>
-  <div class="footer">
-    <p>Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> · <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a> · <a href="/">Home</a></p>
-  </div>
-</body>
-</html>`;
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(html);
-}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:#080c14;color:#c9d1d9;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .nav{background:#080c14cc;backdrop-filter:blur(12px);border-bottom:1px solid #21262d;padding:16px 40px;display:flex;justify-content:space-between;align-items:center;}
+    .nav-logo{color:#fff;font-weight:700;font-size:18px;text-decoration:none;}
+    .nav-logo span{color:#58a6ff;}
+    .nav-links a{color:#8b949e;text-decoration:none;font-size:14px;margin-left:24px;transition:color .2s;}
+    .nav-links a:hover{color:#fff;}
+    .hero{text-align:center;padding:72px 24px 48px;}
+    .hero h1{font-size:clamp(32px,6vw,52px);font-weight:800;color:#fff;letter-spacing:-2px;margin-bottom:14px;animation:fadeUp .5s ease both;}
+    .hero p{color:#8b949e;font-size:16px;animation:fadeUp .5s .1s ease both;}
+    .toggle-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:28px 0;animation:fadeUp .5s .2s ease both;}
+    .toggle-label{font-size:14px;color:#8b949e;}
+    .save-badge{background:#0d2a14;color:#3fb950;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;}
+    .plans{display:flex;gap:20px;max-width:960px;margin:0 auto 80px;padding:0 24px;align-items:stretch;animation:fadeUp .5s .3s ease both;}
+    .plan{background:#0d1117;border:1px solid #21262d;border-radius:16px;padding:32px;flex:1;display:flex;flex-direction:column;transition:border-color .2s,transform .2s;position:relative;}
+    .plan:hover{transform:translateY(-4px);border-color:#58a6ff33;}
+    .plan.popular{border-color:#58a6ff;background:#0a1628;}
+    .pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1f6feb,#388bfd);color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:20px;white-space:nowrap;}
+    .plan-name{font-size:14px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+    .plan-price{font-size:48px;font-weight:800;color:#fff;letter-spacing:-2px;margin-bottom:4px;}
+    .plan-price sup{font-size:20px;vertical-align:top;margin-top:10px;display:inline-block;}
+    .plan-price span{font-size:15px;color:#8b949e;font-weight:400;}
+    .plan-desc{color:#8b949e;font-size:13px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #21262d;}
+    .plan-features{list-style:none;flex:1;margin-bottom:28px;}
+    .plan-features li{color:#c9d1d9;font-size:14px;padding:9px 0;border-bottom:1px solid #21262d11;display:flex;align-items:center;gap:8px;}
+    .plan-features li::before{content:'✓';color:#3fb950;font-weight:700;font-size:13px;}
+    .plan-features li.no::before{content:'✗';color:#484f58;}
+    .plan-features li.no{color:#484f58;}
+    .btn{display:block;text-align:center;padding:13px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s;}
+    .btn-primary{background:linear-gradient(135deg,#1f6feb,#388bfd);color:#fff;}
+    .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+    .btn-outline{background:transparent;color:#58a6ff;border:1px solid #21364f;}
+    .btn-outline:hover{background:#0d1f35;border-color:#58a6ff;}
+    .faq{max-width:640px;margin:0 auto 80px;padding:0 24px;}
+    .faq h2{font-size:24px;font-weight:700;color:#fff;text-align:center;margin-bottom:32px;letter-spacing:-1px;}
+    .faq-item{border-bottom:1px solid #21262d;padding
