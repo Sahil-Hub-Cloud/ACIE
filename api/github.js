@@ -20,32 +20,33 @@ export default async function handler(req, res) {
 
   try {
     const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go|json|txt|mod)$/));
+    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go)$/));
 
     if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
 
-    let tableRows = "| File | Type | Status | Risk |\n| :--- | :--- | :--- | :--- |\n";
+    let tableRows = "| File | Type | Logic | Maintainability |\n| :--- | :--- | :--- | :--- |\n";
     let globalRiskPoints = 0;
-    let criticalChanges = [];
-    const criticalPatterns = [/package\.json$/, /requirements\.txt$/, /go\.mod$/, /App\.[jt]sx?$/, /main\.go$/, /index\.[jt]s$/];
+    let antiPatternsFound = 0;
 
     for (const file of supportedFiles) {
-      const isCritical = criticalPatterns.some(pattern => pattern.test(file.filename));
-      if (isCritical) {
-        globalRiskPoints += 40;
-        criticalChanges.push(file.filename);
-      }
-
       try {
         const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        const parsed = parseFile(file.filename, content);
-        const hasSecret = /password|secret|api_key/i.test(content);
-        if (hasSecret) globalRiskPoints += 50;
         
+        // Logic: Scan for deep nesting (lines starting with 16+ spaces or 4+ tabs)
+        const lines = content.split('\n');
+        const deepLines = lines.filter(line => line.startsWith('                ') || line.startsWith('\t\t\t\t')).length;
+        
+        const hasAntiPattern = deepLines > 0;
+        if (hasAntiPattern) {
+            globalRiskPoints += 15;
+            antiPatternsFound++;
+        }
+
         const ext = file.filename.split('.').pop().toUpperCase();
-        const riskLevel = isCritical || hasSecret ? "🔴 High" : "🟢 Low";
-        tableRows += "| `" + file.filename + "` | " + ext + " | " + (isCritical ? "❤️ **Heart**" : "📄 File") + " | " + riskLevel + " |\n";
+        const status = hasAntiPattern ? "🟠 Deep Nesting" : "✅ Modular";
+
+        tableRows += "| `" + file.filename + "` | " + ext + " | " + (hasAntiPattern ? "Complex" : "Clean") + " | " + status + " |\n";
       } catch (e) { }
     }
 
@@ -53,11 +54,10 @@ export default async function handler(req, res) {
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     const comment = "# ⚡ ACIE Verdict: " + verdict + "\n" +
-                    "### 🧠 Intelligence Summary\n" + 
-                    (criticalChanges.length > 0 ? "- ⚠️ **Critical Change:** Modification to project core: `" + criticalChanges[0] + "`\n" : "- ✅ **Safe Scope:** No core infrastructure files modified.\n") +
-                    "- **Recommendation:** " + (globalRiskPoints >= 50 ? "Seek senior approval before merging." : "Standard review process applies.") + "\n\n" +
+                    "### 🧠 Anti-Pattern Report\n" + 
+                    (antiPatternsFound > 0 ? "- ⚠️ **Complexity Alert:** Found deeply nested logic blocks. Consider flattening the code using guard clauses." : "- ✅ **Logic Flow:** No significant deep nesting detected. Code is readable.") + "\n\n" +
                     "### 📊 Detailed Audit Log\n" + tableRows + "\n" +
-                    "**Performance:** Deep Scan + Heart Check in " + duration + "s 🚀\n" +
+                    "**Performance:** Anti-Pattern Scanner finished in " + duration + "s 🚀\n" +
                     "--- \n" +
                     "*Powered by [ACIE](https://acie-gamma.vercel.app)*";
 
