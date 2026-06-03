@@ -31,7 +31,10 @@ export default async function handler(req, res) {
         const deepLines = content.split('\n').filter(l => l.match(/^\s{8,}/)).length;
         if (deepLines > 3) { score -= 10; issues.push('deep nesting'); }
         const decisions = (content.match(/if|else|for|while/g) || []).length;
-        if (decisions > 20) { score -= 15; issues.push('high complexity'); }
+        if (decisions > 20) { score -= 15; issues.push('high complexity'); }        // Style Auditor: Flag snake_case in JS/TS files
+        const isJS = file.filename.match(/\.[jt]sx?$/);
+        const hasSnakeCase = /[a-z]+_[a-z]+/.test(content);
+        if (isJS && hasSnakeCase) { score -= 10; issues.push('mixed naming style'); }
         score = Math.max(0, score);
         fileScores.push({ path: file.filename, score, issues, exports: parsed.exports.length, imports: parsed.imports.length });
       } catch(e) {
@@ -103,9 +106,10 @@ export default async function handler(req, res) {
     if (risk === 'HIGH') labels.push('high-risk');
     else if (risk === 'LOW' && missingTests.length === 0) labels.push('ready-to-merge');
     if (missingTests.length > 0) labels.push('missing-tests');
-    if (fileScores.some(f => f.issues.includes('hardcoded secret'))) labels.push('security-risk');
+    if (fileScores.some(f => f.issues.includes('hardcoded secret'))) labels.push('security-risk');  
+  if (fileScores.some(f => f.issues.includes('mixed naming style'))) labels.push('style-violation');
     
-    if (labels.length > 0) {
+ if (labels.length > 0) {
       try {
         await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/labels', { labels: labels }, { headers });
       } catch(e) { console.error('Label error:', e.message); }
