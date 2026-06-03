@@ -118,7 +118,21 @@ export default async function handler(req, res) {
     try {
       const slack = process.env.SLACK_WEBHOOK_URL;
       if (slack) await axios.post(slack, { text: 'ACIE Alert - PR #' + prNumber + ' in ' + repo + ' | Health: ' + avgScore + '% | Risk: ' + risk });
-    } catch(e) {}
+    } catch(e) {}    // Send Email Report
+    try {
+      const resendKey = process.env.RESEND_API_KEY;
+      if (resendKey) {
+        await axios.post('https://api.resend.com/emails', {
+          from: 'ACIE <onboarding@resend.dev>',
+          to: ['sahilshaik4679@gmail.com'],
+          subject: 'ACIE Alert - PR #' + prNumber + ' in ' + repo + ' | Risk: ' + risk,
+          html: '<h2>ACIE Change Impact Report</h2><p><strong>Health Score:</strong> ' + avgScore + '%</p><p><strong>Risk Level:</strong> ' + risk + '</p><p><strong>Blast Radius:</strong> ' + affectedCount + ' file(s) affected</p><p><a href="https://github.com/' + repo + '/pull/' + prNumber + '">View PR on GitHub</a></p>'
+        }, {
+          headers: { 'Authorization': 'Bearer ' + resendKey, 'Content-Type': 'application/json' }
+        });
+        console.log('Email notification sent!');
+      }
+    } catch(emailErr) { console.error('Email error:', emailErr.message); }
     return res.status(200).json({ status: 'success', risk, avgScore });
   } catch(err) {
     console.error('ACIE Error:', err.message);
