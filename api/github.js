@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       if (resendKey) {
         await axios.post('https://api.resend.com/emails', {
           from: 'ACIE <onboarding@resend.dev>',
-          to: ['sahilshaik4679@gmail.com'],
+          to: ['bashaskjani663@gmail.com'],
           subject: 'ACIE Alert - PR #' + prNumber + ' in ' + repo + ' | Risk: ' + risk,
           html: '<h2>ACIE Change Impact Report</h2><p><strong>Health Score:</strong> ' + avgScore + '%</p><p><strong>Risk Level:</strong> ' + risk + '</p><p><strong>Blast Radius:</strong> ' + affectedCount + ' file(s) affected</p><p><a href="https://github.com/' + repo + '/pull/' + prNumber + '">View PR on GitHub</a></p>'
         }, {
