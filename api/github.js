@@ -98,7 +98,19 @@ export default async function handler(req, res) {
     else if (risk === 'MEDIUM') comment += 'Medium risk - review before merging.\n';
     else comment += 'Low risk - safe to merge.\n';
     comment += '\nPowered by ACIE - https://acie-gamma.vercel.app';
-    await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/comments', { body: comment }, { headers });
+    await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/comments', { body: comment }, { headers });    // Auto-Labeling Logic
+    const labels = [];
+    if (risk === 'HIGH') labels.push('high-risk');
+    else if (risk === 'LOW' && missingTests.length === 0) labels.push('ready-to-merge');
+    if (missingTests.length > 0) labels.push('missing-tests');
+    if (fileScores.some(f => f.issues.includes('hardcoded secret'))) labels.push('security-risk');
+    
+    if (labels.length > 0) {
+      try {
+        await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/labels', { labels: labels }, { headers });
+      } catch(e) { console.error('Label error:', e.message); }
+    }
+
     try {
       const slack = process.env.SLACK_WEBHOOK_URL;
       if (slack) await axios.post(slack, { text: 'ACIE Alert - PR #' + prNumber + ' in ' + repo + ' | Health: ' + avgScore + '% | Risk: ' + risk });
