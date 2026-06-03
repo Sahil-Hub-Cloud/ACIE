@@ -109,7 +109,18 @@ export default async function handler(req, res) {
     if (fileScores.some(f => f.issues.includes('hardcoded secret'))) labels.push('security-risk');  
   if (fileScores.some(f => f.issues.includes('mixed naming style'))) labels.push('style-violation');
     
- if (labels.length > 0) {
+ if (labels.length > 0) {    // Post GitHub Status Check (green or red merge button)
+    const state = (risk === 'HIGH' || fileScores.some(f => f.issues.includes('hardcoded secret'))) ? 'failure' : 'success';
+    const statusDesc = state === 'success' ? 'ACIE: Low risk, safe to merge' : 'ACIE: High risk or security issue detected';
+    try {
+      await axios.post('https://api.github.com/repos/' + repo + '/statuses/' + headSha, {
+        state: state,
+        target_url: 'https://acie-gamma.vercel.app/dashboard',
+        description: statusDesc,
+        context: 'ACIE Change Impact'
+      }, { headers });
+    } catch(statusErr) { console.error('Status check error:', statusErr.message); }
+
       try {
         await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/labels', { labels: labels }, { headers });
       } catch(e) { console.error('Label error:', e.message); }
