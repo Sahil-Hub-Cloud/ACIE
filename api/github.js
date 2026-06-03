@@ -1,92 +1,111 @@
 import axios from 'axios';
+import { parseFile } from '../src/parser/parser.js';
 
 export default async function handler(req, res) {
-  const startTime = Date.now();
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE is running' });
-
   const event = req.headers['x-github-event'];
-  const body = req.body;
-
-  if (event !== 'pull_request' || !['opened', 'synchronize', 'reopened'].includes(body.action)) {
+  const action = req.body?.action;
+  if (event !== 'pull_request' || !['opened','synchronize','reopened'].includes(action)) {
     return res.status(200).json({ status: 'ignored' });
   }
-
-  const repo = body.repository.full_name;
-  const prNumber = body.pull_request.number;
-  const headSha = body.pull_request.head.sha;
+  const repo = req.body.repository.full_name;
+  const prNumber = req.body.pull_request.number;
+  const headSha = req.body.pull_request.head.sha;
   const token = process.env.GITHUB_TOKEN;
-  const headers = { Authorization: "token " + token, Accept: 'application/vnd.github.v3+json' };
-
+  const headers = { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json' };
   try {
-    const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const supportedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx|py|go)$/));
-
-    if (supportedFiles.length === 0) return res.status(200).json({ status: 'no supported files' });
-
-    let tableRows = "| File | Score | Style | Complexity |\n| :--- | :--- | :--- | :--- |\n";
-    let totalDeductions = 0;
-    let styleWarnings = 0;
-    let securityRisk = false;
-    let complexLogic = false;
-
-    for (const file of supportedFiles) {
+    const filesRes = await axios.get('https://api.github.com/repos/' + repo + '/pulls/' + prNumber + '/files', { headers });
+    const jsFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
+    if (jsFiles.length === 0) return res.status(200).json({ status: 'no js files' });
+    const parsedFiles = [];
+    const fileScores = [];
+    for (const file of jsFiles) {
       try {
-        const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.filename + "?ref=" + headSha, { headers });
+        const contentRes = await axios.get('https://api.github.com/repos/' + repo + '/contents/' + file.filename + '?ref=' + headSha, { headers });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        
-        let fileScore = 100;
-        
-        // Style Check
-        const isJS = file.filename.match(/\.[jt]sx?$/);
-        const hasSnakeCase = /[a-z]+_[a-z]+/.test(content);
-        let styleStatus = "✅ Uniform";
-        if (isJS && hasSnakeCase) {
-            styleStatus = "⚠️ Mixed";
-            fileScore -= 10;
-            styleWarnings++;
+        const parsed = parseFile(file.filename, content);
+        parsedFiles.push(parsed);
+        let score = 100;
+        const issues = [];
+        if (/password|api_key|secret/i.test(content)) { score -= 50; issues.push('hardcoded secret'); }
+        const deepLines = content.split('\n').filter(l => l.match(/^\s{8,}/)).length;
+        if (deepLines > 3) { score -= 10; issues.push('deep nesting'); }
+        const decisions = (content.match(/if|else|for|while/g) || []).length;
+        if (decisions > 20) { score -= 15; issues.push('high complexity'); }
+        score = Math.max(0, score);
+        fileScores.push({ path: file.filename, score, issues, exports: parsed.exports.length, imports: parsed.imports.length });
+      } catch(e) {
+        fileScores.push({ path: file.filename, score: 100, issues: [], exports: 0, imports: 0 });
+      }
+    }
+    const changedPaths = new Set(parsedFiles.map(f => f.filePath));
+    const repoFilesRes = await axios.get('https://api.github.com/repos/' + repo + '/git/trees/' + headSha + '?recursive=1', { headers });
+    const allRepoFiles = repoFilesRes.data.tree.filter(f => f.type === 'blob' && f.path.match(/\.(js|ts|jsx|tsx)$/)).map(f => f.path);
+    const blastRadius = new Set();
+    for (const repoFilePath of allRepoFiles) {
+      if (changedPaths.has(repoFilePath)) continue;
+      try {
+        const contentRes = await axios.get('https://api.github.com/repos/' + repo + '/contents/' + repoFilePath + '?ref=' + headSha, { headers });
+        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
+        const parsed = parseFile(repoFilePath, content);
+        for (const imp of parsed.imports) {
+          for (const changed of changedPaths) {
+            const impClean = imp.from.replace(/^\.\.\//, '').replace(/^\.\//, '').replace(/\.(js|ts|jsx|tsx)$/, '');
+            const changedClean = changed.replace(/\.(js|ts|jsx|tsx)$/, '');
+            if (changedClean.endsWith(impClean) || changedClean.includes('/' + impClean) || impClean === changedClean.split('/').pop()) {
+              blastRadius.add(repoFilePath);
+            }
+          }
         }
-
-        // Complexity Check (Cyclomatic)
-        const conditions = (content.match(/if|else|for|while|&&|\|\|/g) || []).length;
-        let complexityStatus = conditions > 20 ? "🔴 High" : (conditions > 10 ? "🟡 Medium" : "🟢 Low");
-        if (conditions > 20) { fileScore -= 15; complexLogic = true; }
-
-        // Security / Best Practice Check
-        if (content.includes('password') || content.includes('api_key')) { fileScore -= 50; securityRisk = true; }
-        if (content.includes('                ')) fileScore -= 10;
-
-        totalDeductions += (100 - fileScore);
-        const color = fileScore > 80 ? "🟢" : (fileScore > 50 ? "🟡" : "🔴");
-        tableRows += "| `" + file.filename + "` | " + color + " " + Math.max(0, fileScore) + "% | " + styleStatus + " | " + complexityStatus + " (" + conditions + ") |\n";
-      } catch (e) { }
+      } catch(e) {}
     }
-
-    const finalHealth = Math.max(0, 100 - (totalDeductions / supportedFiles.length));
-    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-
-    // AUTO-LABELING LOGIC
-    const labels = [];
-    if (securityRisk) labels.push('security-risk');
-    if (styleWarnings > 0) labels.push('style-violation');
-    if (complexLogic) labels.push('needs-refactoring');
-    if (finalHealth > 80) labels.push('ready-to-merge');
-    
-    if (labels.length > 0) {
-      await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/labels", { labels: labels }, { headers });
+    const allFilenames = filesRes.data.map(f => f.filename);
+    const missingTests = [];
+    for (const file of parsedFiles) {
+      if (!file.filePath.match(/\.(test|spec)\.(js|ts|jsx|tsx)$/)) {
+        const base = file.filePath.replace(/\.(js|ts|jsx|tsx)$/, '');
+        const hasTest = allFilenames.some(f => f.includes(base + '.test') || f.includes(base + '.spec'));
+        if (!hasTest) missingTests.push(file.filePath);
+      }
     }
-
-    const comment = "# ⚡ ACIE Health Score: " + Math.round(finalHealth) + "%\n" +
-                    "### 🧠 Style & Complexity Audit\n" + 
-                    (styleWarnings > 0 ? "- ⚠️ **Convention Warning:** Detected mixed naming styles (Snake Case in JS). Consider sticking to camelCase.\n" : "- ✅ **Style Consistent:** Naming conventions look correct for this language stack.\n") +
-                    "- 🔍 **Complexity:** Measured decision points (if/else/loops) per file.\n\n" +
-                    "### 📁 Analysis Detail\n" + tableRows + "\n" +
-                    "**Performance:** Deep Scan finished in " + duration + "s 🚀\n" +
-                    "--- \n" +
-                    "*Powered by [ACIE Intelligence](https://acie-gamma.vercel.app)*";
-
-    await axios.post("https://api.github.com/repos/" + repo + "/issues/" + prNumber + "/comments", { body: comment }, { headers });
-    return res.status(200).json({ status: 'success' });
-  } catch (err) {
-    return res.status(200).json({ status: 'error' });
+    const affectedCount = blastRadius.size;
+    let risk = 'LOW';
+    if (affectedCount >= 3) risk = 'HIGH';
+    else if (affectedCount >= 1) risk = 'MEDIUM';
+    if (missingTests.length > 0 && risk === 'LOW') risk = 'MEDIUM';
+    const avgScore = Math.round(fileScores.reduce((a, b) => a + b.score, 0) / fileScores.length);
+    let comment = '## ACIE - Change Impact Report\n\n';
+    comment += '### Health Score: ' + avgScore + '%\n\n';
+    comment += '| Metric | Value |\n|--------|-------|\n';
+    comment += '| Risk Level | ' + risk + ' |\n';
+    comment += '| Files Analyzed | ' + fileScores.length + ' |\n';
+    comment += '| Blast Radius | ' + affectedCount + ' file(s) |\n\n';
+    comment += '### File Analysis\n\n';
+    comment += '| File | Health | Exports | Imports | Issues |\n';
+    comment += '|------|--------|---------|---------|--------|\n';
+    fileScores.forEach(f => {
+      comment += '| ' + f.path + ' | ' + f.score + '% | ' + f.exports + ' | ' + f.imports + ' | ' + (f.issues.length ? f.issues.join(', ') : 'none') + ' |\n';
+    });
+    comment += '\n### Blast Radius\n';
+    if (blastRadius.size === 0) comment += 'No other files affected.\n';
+    else blastRadius.forEach(f => { comment += '- ' + f + '\n'; });
+    if (missingTests.length > 0) {
+      comment += '\n### Missing Tests\n';
+      missingTests.forEach(f => { comment += '- ' + f + '\n'; });
+    }
+    comment += '\n### Recommendation\n';
+    if (risk === 'HIGH') comment += 'High risk - review carefully before merging.\n';
+    else if (risk === 'MEDIUM') comment += 'Medium risk - review before merging.\n';
+    else comment += 'Low risk - safe to merge.\n';
+    comment += '\nPowered by ACIE - https://acie-gamma.vercel.app';
+    await axios.post('https://api.github.com/repos/' + repo + '/issues/' + prNumber + '/comments', { body: comment }, { headers });
+    try {
+      const slack = process.env.SLACK_WEBHOOK_URL;
+      if (slack) await axios.post(slack, { text: 'ACIE Alert - PR #' + prNumber + ' in ' + repo + ' | Health: ' + avgScore + '% | Risk: ' + risk });
+    } catch(e) {}
+    return res.status(200).json({ status: 'success', risk, avgScore });
+  } catch(err) {
+    console.error('ACIE Error:', err.message);
+    return res.status(500).json({ status: 'error' });
   }
 }
