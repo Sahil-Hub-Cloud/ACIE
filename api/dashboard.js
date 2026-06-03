@@ -1,174 +1,80 @@
-import fs from 'fs';
-const code = `import axios from 'axios';
-import { parseFile } from '../src/parser/parser.js';
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(200).json({ status: 'ACIE is running' });
-  }
-
-  const event = req.headers['x-github-event'];
-  const action = req.body?.action;
-
-  if (event !== 'pull_request' || !['opened', 'synchronize', 'reopened'].includes(action)) {
-    return res.status(200).json({ status: 'ignored' });
-  }
-
-  const repo = req.body.repository.full_name;
-  const prNumber = req.body.pull_request.number;
-  const prTitle = req.body.pull_request.title;
-  const prAuthor = req.body.pull_request.user.login;
-  const headSha = req.body.pull_request.head.sha;
-  const token = process.env.GITHUB_TOKEN;
-  const headers = {
-    Authorization: \`token \${token}\`,
-    Accept: 'application/vnd.github.v3+json'
-  };
-
-  try {
-    const filesRes = await axios.get(
-      \`https://api.github.com/repos/\${repo}/pulls/\${prNumber}/files\`,
-      { headers }
-    );
-    const jsFiles = filesRes.data.filter(f => f.filename.match(/\\.(js|ts|jsx|tsx|py)$/));
-
-    if (jsFiles.length === 0) {
-      return res.status(200).json({ status: 'no supported files changed' });
-    }
-
-    const parsedFiles = [];
-    for (const file of jsFiles) {
-      try {
-        const contentRes = await axios.get(
-          \`https://api.github.com/repos/\${repo}/contents/\${file.filename}?ref=\${headSha}\`,
-          { headers }
-        );
-        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        parsedFiles.push(parseFile(file.filename, content));
-      } catch (e) {
-        parsedFiles.push({ filePath: file.filename, exports: [], imports: [] });
-      }
-    }
-
-    const changedPaths = new Set(parsedFiles.map(f => f.filePath));
-
-    const repoFilesRes = await axios.get(
-      \`https://api.github.com/repos/\${repo}/git/trees/\${headSha}?recursive=1\`,
-      { headers }
-    );
-    const allRepoFiles = repoFilesRes.data.tree
-      .filter(f => f.type === 'blob' && f.path.match(/\\.(js|ts|jsx|tsx|py)$/))
-      .map(f => f.path);
-
-    const blastRadius = new Set();
-    for (const repoFilePath of allRepoFiles) {
-      if (changedPaths.has(repoFilePath)) continue;
-      try {
-        const contentRes = await axios.get(
-          \`https://api.github.com/repos/\${repo}/contents/\${repoFilePath}?ref=\${headSha}\`,
-          { headers }
-        );
-        const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
-        const parsed = parseFile(repoFilePath, content);
-        for (const imp of parsed.imports) {
-          for (const changed of changedPaths) {
-            const impClean = imp.from.replace(/^\\.\\.\\//, '').replace(/^\\.\\//, '').replace(/\\.(js|ts|jsx|tsx)$/, '');
-            const changedClean = changed.replace(/\\.(js|ts|jsx|tsx)$/, '');
-            if (
-              changedClean.endsWith(impClean) ||
-              changedClean.includes('/' + impClean) ||
-              impClean === changedClean.split('/').pop()
-            ) {
-              blastRadius.add(repoFilePath);
-            }
-          }
-        }
-      } catch (e) {}
-    }
-
-    const allFilenames = filesRes.data.map(f => f.filename);
-    const missingTests = [];
-    for (const file of parsedFiles) {
-      if (!file.filePath.match(/\\.(test|spec)\\.(js|ts|jsx|tsx)$/)) {
-        const base = file.filePath.replace(/\\.(js|ts|jsx|tsx)$/, '');
-        const hasTest = allFilenames.some(f =>
-          f.match(new RegExp(base.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\\\.(test|spec)'))
-        );
-        if (!hasTest) missingTests.push(file.filePath);
-      }
-    }
-
-    const affectedCount = blastRadius.size;
-    let risk = 'LOW';
-    if (affectedCount >= 3) risk = 'HIGH';
-    else if (affectedCount >= 1) risk = 'MEDIUM';
-    if (missingTests.length > 0 && risk === 'LOW') risk = 'MEDIUM';
-
-    const riskIcon = risk === 'HIGH' ? '🔴' : risk === 'MEDIUM' ? '🟡' : '🟢';
-    const riskEmoji = risk === 'HIGH' ? '⛔' : risk === 'MEDIUM' ? '⚠️' : '✅';
-
-    let comment = '';
-    comment += '## ⚡ ACIE — Change Impact Report\\n\\n';
-    comment += '> Automated analysis by [ACIE](https://acie-gamma.vercel.app) — AI Change Impact Engine\\n\\n';
-    comment += '---\\n\\n';
-
-    comment += '### 👤 PR Info\\n';
-    comment += '| Field | Value |\\n';
-    comment += '|-------|-------|\\n';
-    comment += \`| Author | @\${prAuthor} |\\n\`;
-    comment += \`| Files changed | \${parsedFiles.length} |\\n\`;
-    comment += \`| Risk | \${riskIcon} **\${risk}** |\\n\\n\`;
-
-    comment += '### 📁 Files Changed\\n';
-    comment += '| File | Exports | Imports |\\n';
-    comment += '|------|---------|---------|\\n';
-    parsedFiles.forEach(f => {
-      comment += \`| \\\`\${f.filePath}\\\` | \${f.exports.length} | \${f.imports.length} |\\n\`;
-    });
-
-    comment += '\\n### 💥 Blast Radius\\n';
-    if (blastRadius.size === 0) {
-      comment += '> ✅ No other files affected by this change.\\n';
-    } else {
-      blastRadius.forEach(f => { comment += \`- \\\`\${f}\\\`\\n\`; });
-    }
-
-    comment += \`\\n### \${riskIcon} Risk Score: **\${risk}**\\n\`;
-    if (affectedCount > 0) comment += \`- \${affectedCount} file\${affectedCount !== 1 ? 's' : ''} in blast radius\\n\`;
-    missingTests.forEach(f => { comment += \`- ⚠️ \\\`\${f}\\\` has no test coverage\\n\`; });
-
-    comment += \`\\n### \${riskEmoji} Recommendation\\n\`;
-    if (risk === 'HIGH') comment += '> ⛔ **High risk** — carefully review all affected files before merging.\\n';
-    else if (risk === 'MEDIUM') comment += '> ⚠️ **Medium risk** — review affected files and ensure test coverage.\\n';
-    else comment += '> ✅ **Low risk** — safe to merge.\\n';
-
-    comment += '\\n---\\n';
-    comment += '*Powered by [ACIE](https://acie-gamma.vercel.app) — [Dashboard](https://acie-gamma.vercel.app/dashboard) · [Pricing](https://acie-gamma.vercel.app/pricing)*';
-
-    await axios.post(
-      \`https://api.github.com/repos/\${repo}/issues/\${prNumber}/comments\`,
-      { body: comment },
-      { headers }
-    );
-
-    try {
-      const slackWebhook = process.env.SLACK_WEBHOOK_URL;
-      if (slackWebhook) {
-        await axios.post(slackWebhook, {
-          text: \`\${riskIcon} *ACIE Alert* — PR #\${prNumber} in *\${repo}*\\n*Title:* \${prTitle}\\n*Author:* @\${prAuthor}\\n*Risk:* \${risk}\\n*Blast radius:* \${affectedCount} file(s)\\n🔗 https://github.com/\${repo}/pull/\${prNumber}\`
-        });
-      }
-    } catch (slackErr) {
-      console.error('Slack error:', slackErr.message);
-    }
-
-    return res.status(200).json({ status: 'success', risk, affectedCount });
-
-  } catch (error) {
-    console.error('ACIE Error:', error.response?.data || error.message);
-    return res.status(500).json({ status: 'error', message: error.message });
-  }
-}`;
-
-fs.writeFileSync('api/github.js', code);
-console.log('done');
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>ACIE Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; }
+    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { color: #58a6ff; font-size: 24px; text-decoration: none; }
+    .nav a { color: #58a6ff; text-decoration: none; margin-left: 20px; font-size: 14px; }
+    .container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; }
+    .card h2 { font-size: 16px; color: #58a6ff; margin-bottom: 12px; }
+    .card p, .card li { color: #8b949e; font-size: 14px; line-height: 1.8; }
+    .card ol { padding-left: 20px; }
+    .stat { font-size: 36px; font-weight: 700; color: #c9d1d9; }
+    .stat-label { color: #8b949e; font-size: 13px; margin-top: 4px; }
+    .low { color: #3fb950; font-weight: 600; font-size: 14px; margin: 8px 0; }
+    .medium { color: #d29922; font-weight: 600; font-size: 14px; margin: 8px 0; }
+    .high { color: #f85149; font-weight: 600; font-size: 14px; margin: 8px 0; }
+    .full { grid-column: 1 / -1; }
+    .tag { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #8b949e; margin: 4px 4px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ACIE Dashboard</h1>
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/history">History</a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>Status</h2>
+        <div class="stat">Live</div>
+        <div class="stat-label">Actively monitoring GitHub Pull Requests</div>
+      </div>
+      <div class="card">
+        <h2>What is ACIE?</h2>
+        <p>ACIE automatically analyzes every Pull Request and tells developers exactly which files will be affected by their changes.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h2>How it works</h2>
+        <ol>
+          <li>Developer opens a Pull Request</li>
+          <li>ACIE scans all changed files</li>
+          <li>Maps import/export relationships</li>
+          <li>Calculates blast radius</li>
+          <li>Posts a risk report as a PR comment</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Risk Levels</h2>
+        <p class="low">LOW - Safe to merge</p>
+        <p class="medium">MEDIUM - Review before merging</p>
+        <p class="high">HIGH - Carefully review all affected files</p>
+      </div>
+    </div>
+    <div class="card full">
+      <h2>Powered by</h2>
+      <span class="tag">GitHub Apps</span>
+      <span class="tag">Vercel</span>
+      <span class="tag">Node.js</span>
+      <span class="tag">Health Score</span>
+      <span class="tag">Blast Radius</span>
+      <span class="tag">Slack Alerts</span>
+    </div>
+  </div>
+</body>
+</html>`;
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(html);
+}
