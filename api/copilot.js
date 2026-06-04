@@ -30,7 +30,7 @@ export default async function handler(req, res) {
           i++;
         } else {
           clearInterval(itv);
-          document.getElementById('thinking').innerHTML = "<b>Analysis Complete:</b> The deployment failed due to a <b>Circular Dependency</b> in <i>/auth/token.js</i>. I have prepared an automated remediation PR. <br><br> <button onclick='showFix()' class='bg-emerald-600 px-4 py-2 rounded-lg font-bold text-xs'>GENERATE FIX PR</button>";
+          document.getElementById('thinking').innerHTML = "<b>Analysis Complete:</b> The deployment failed due to a <b>Circular Dependency</b> in <i>/auth/token.js</i>. I have prepared an automated remediation PR. <br><br> <button onclick=\'showFix()\' class=\'bg-emerald-600 px-4 py-2 rounded-lg font-bold text-xs\'>GENERATE FIX PR</button>";
         }
       }, 800);
     }
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       const box = document.getElementById('chat-box');
       box.innerHTML += '<div class="flex gap-4"><div class="w-8 h-8 rounded bg-indigo-500 flex items-center justify-center font-bold">A</div><div class="max-w-2xl glass p-6 rounded-2xl"><div class="text-[10px] font-bold text-gray-500 mb-2 uppercase">Proposed Fix: /auth/token.js</div><div class="code-box p-4 rounded-lg mb-4 text-emerald-400"> - import { validate } from "./session"; <br> + import { validate } from "./utils/crypto"; </div><div id="pr-status" class="text-xs text-cyan-400 font-bold animate-pulse">CREATING GITHUB PULL REQUEST...</div></div></div>';
       setTimeout(() => {
-        document.getElementById('pr-status').innerHTML = "✅ SUCCESS: PR #104 Created. <a href='#' class='underline'>View on GitHub</a>";
+        document.getElementById('pr-status').innerHTML = "✅ SUCCESS: PR #104 Created. <a href=\'#\' class=\'underline\'>View on GitHub</a>";
         document.getElementById('pr-status').classList.remove('animate-pulse');
         document.getElementById('pr-status').classList.add('text-emerald-400');
       }, 2000);
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 <body class="flex h-screen">
   <aside class="w-64 bg-black border-r border-white/5 p-8 flex flex-col gap-6">
     <div class="text-2xl font-black">⚡ ACIE</div>
-    <button onclick="document.getElementById('chat-input').value='Why is deployment failing?'" class="text-left text-xs font-bold p-3 glass rounded-xl hover:border-indigo-500 transition-all">Why is deployment failing?</button>
+    <button onclick="document.getElementById('chat-input').value=\'Why is deployment failing?\'" class="text-left text-xs font-bold p-3 glass rounded-xl hover:border-indigo-500 transition-all">Why is deployment failing?</button>
     <a href="/dashboard" class="mt-auto text-xs text-gray-500">← Back to Mission Control</a>
   </aside>
   <main class="flex-1 flex flex-col p-10">

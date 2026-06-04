@@ -1,37 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/github.js", "use": "@vercel/node" },
-    { "src": "api/landing.js", "use": "@vercel/node" },
-    { "src": "api/dashboard.js", "use": "@vercel/node" },
-    { "src": "api/copilot.js", "use": "@vercel/node" },
-    { "src": "api/executive.js", "use": "@vercel/node" },
-    { "src": "api/war-room.js", "use": "@vercel/node" },
-    { "src": "api/digital-twin.js", "use": "@vercel/node" },
-    { "src": "api/outages.js", "use": "@vercel/node" },
-    { "src": "api/marketplace.js", "use": "@vercel/node" },
-    { "src": "api/pricing.js", "use": "@vercel/node" },
-    { "src": "api/history.js", "use": "@vercel/node" },
-    { "src": "api/time-machine.js", "use": "@vercel/node" },
-    { "src": "api/soc.js", "use": "@vercel/node" },
-    { "src": "api/knowledge.js", "use": "@vercel/node" },
-    { "src": "api/boardroom.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/github", "dest": "/api/github.js" },
-    { "src": "/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/copilot", "dest": "/api/copilot.js" },
-    { "src": "/executive", "dest": "/api/executive.js" },
-    { "src": "/war-room", "dest": "/api/war-room.js" },
-    { "src": "/digital-twin", "dest": "/api/digital-twin.js" },
-    { "src": "/outages", "dest": "/api/outages.js" },
-    { "src": "/marketplace", "dest": "/api/marketplace.js" },
-    { "src": "/pricing", "dest": "/api/pricing.js" },
-    { "src": "/history", "dest": "/api/history.js" },
-    { "src": "/time-machine", "dest": "/api/time-machine.js" },
-    { "src": "/soc", "dest": "/api/soc.js" },
-    { "src": "/knowledge", "dest": "/api/knowledge.js" },
-    { "src": "/boardroom", "dest": "/api/boardroom.js" },
-    { "src": "/", "dest": "/api/landing.js" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/", "destination": "/api/landing" },
+    { "source": "/(.*)", "destination": "/api/$1" }
   ]
 }
