@@ -1,41 +1,56 @@
-export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(`<!DOCTYPE html><html><head><style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Mono&display=swap');
+export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=Inter:wght@400;500;600&display=swap');
   :root {
-    --bg: #030014;
-    --glass: rgba(255, 255, 255, 0.02);
-    --border: rgba(255, 255, 255, 0.08);
-    --neon-p: #7000ff;
-    --neon-b: #00d1ff;
+    --bg: #020617; --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.08);
+    --purple: #7c3aed; --cyan: #06b6d4; --gold: #fbbf24; --green: #10b981;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
-  .glow-mesh {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 50% -20%, #1a0033 0%, transparent 60%),
-                radial-gradient(circle at 0% 100%, #001a33 0%, transparent 40%);
-    z-index: -1;
-  }
-  .glass {
-    background: var(--glass); backdrop-filter: blur(20px);
-    border: 1px solid var(--border); border-radius: 24px;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  .glass:hover {
-    border-color: var(--neon-p); transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(112, 0, 255, 0.15);
-  }
-  .neon-txt {
-    background: linear-gradient(135deg, #fff 40%, var(--neon-b));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  
+  /* Aurora Background */
+  .aurora { position: fixed; inset: 0; filter: blur(100px); z-index: -1; opacity: 0.5; pointer-events: none; }
+  .orb { position: absolute; border-radius: 50%; animation: float 20s infinite alternate; }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, var(--purple), transparent 70%); top: -200px; left: -100px; }
+  .orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, var(--cyan), transparent 70%); bottom: -100px; right: -100px; opacity: 0.4; }
+  @keyframes float { from { transform: translate(0,0); } to { transform: translate(100px, 50px); } }
 
-    .layout { display: flex; height: 100vh; padding: 20px; gap: 20px; }
-    .side { width: 280px; padding: 40px; }
-    .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .stat { padding: 30px; text-align: center; }
-    .num { font-size: 50px; font-weight: 800; color: var(--neon-b); letter-spacing: -2px; }
-    .feed { grid-column: span 2; padding: 40px; font-family: 'Space Mono'; }
-  </style></head><body><div class="glow-mesh"></div><div class="layout"><div class="glass side"><h2 class="neon-txt">CORE_SYS</h2><nav style="margin-top:50px; display:flex; flex-direction:column; gap:25px;"><a href="/" style="color:#fff; text-decoration:none; font-size:14px; font-weight:800;">OVERVIEW</a><a href="/pricing" style="color:#444; text-decoration:none; font-size:14px;">UPGRADES</a><a href="/history" style="color:#444; text-decoration:none; font-size:14px;">DATA_LOGS</a></nav></div><div class="main"><div class="glass stat"><div class="num">99.9%</div><div style="font-size:10px; color:#555;">SYSTEM_STABILITY</div></div><div class="glass stat"><div class="num">04ms</div><div style="font-size:10px; color:#555;">NEURAL_LATENCY</div></div><div class="glass feed"><h3 style="margin-bottom:20px; font-size:14px; color:var(--neon-p);">[ HOLOGRAPHIC_STREAM ]</h3><div style="font-size:13px; color:#0f0;">> PR_102: ARCHITECTURE_SECURE [PASS]<br>> PR_101: <span style="color:#f0f;">LEAK_DETECTED</span> [BLOCK_INITIALIZED]</div></div></div></div></body></html>`);
-}
+  /* Premium Glass Cards */
+  .glass { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 24px; transition: 0.4s cubic-bezier(0.2, 0, 0, 1); }
+  .glass:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+  /* Typography */
+  h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.04em; }
+  .grad-text { background: linear-gradient(135deg, #fff 30%, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .layout { display: flex; height: 100vh; }
+  .sidebar { width: 280px; background: #010409; border-right: 1px solid var(--border); padding: 40px 24px; }
+  .main { flex: 1; padding: 60px; overflow-y: auto; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 48px; }
+  .s-card { padding: 30px; text-align: center; }
+  .s-val { font-size: 36px; font-weight: 800; color: #fff; }
+  .feed { padding: 40px; }
+  .nav-l { display: block; padding: 14px 20px; color: #64748b; text-decoration: none; border-radius: 12px; font-weight: 600; margin-bottom: 8px; }
+  .nav-l.active { background: rgba(124,58,237,0.1); color: #fff; border: 1px solid rgba(124,58,237,0.2); }
+</style></head><body>
+  <div class="layout">
+    <div class="sidebar">
+      <div style="font-weight:800; font-size:22px; margin-bottom:60px;">⚡ ACIE</div>
+      <a href="#" class="nav-l active">Dashboard</a>
+      <a href="/history" class="nav-l">Security Logs</a>
+      <a href="/pricing" class="nav-l">Billing</a>
+    </div>
+    <div class="main">
+      <h1 style="margin-bottom:40px;">Intelligence Center</h1>
+      <div class="stat-grid">
+        <div class="glass s-card"><div class="s-val" style="color:var(--green)">98%</div><div style="font-size:12px; color:#475569; margin-top:8px;">HEALTH SCORE</div></div>
+        <div class="glass s-card"><div class="s-val">42</div><div style="font-size:12px; color:#475569; margin-top:8px;">TOTAL SCANS</div></div>
+        <div class="glass s-card"><div class="s-val" style="color:var(--purple)">12ms</div><div style="font-size:12px; color:#475569; margin-top:8px;">AI LATENCY</div></div>
+        <div class="glass s-card"><div class="s-val" style="color:var(--gold)">0</div><div style="font-size:12px; color:#475569; margin-top:8px;">VULNERABILITIES</div></div>
+      </div>
+      <div class="glass feed">
+        <h3 style="margin-bottom:30px;">Live Stream</h3>
+        <div style="color:#64748b;">Waiting for incoming GitHub Webhook data...</div>
+      </div>
+    </div>
+  </div>
+</body></html>`);}
