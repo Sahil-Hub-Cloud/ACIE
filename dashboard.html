@@ -1,44 +1,7 @@
-<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    body { background-color: #010409; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; overflow-x:hidden; }
-    .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; transition: 0.4s; }
-    .glass:hover { border-color: rgba(0, 209, 255, 0.3); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-    .grad-txt { background: linear-gradient(135deg, #fff 40%, #00d1ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .aurora { position: fixed; inset: 0; filter: blur(100px); z-index: -1; opacity: 0.4; background: radial-gradient(circle at 20% 20%, #4338ca22 0, transparent 40%), radial-gradient(circle at 80% 80%, #6d28d922 0, transparent 40%); }
-    .pulse { width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #10b981; animation: p 2s infinite; }
-    @keyframes p { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  </style>
-</head>
-<body class="flex h-screen overflow-hidden">
-  <aside class="w-64 bg-black border-r border-white/5 p-8 flex flex-col gap-10">
-    <div class="text-2xl font-black">⚡ ACIE</div>
-    <nav class="flex flex-col gap-3 flex-1 text-sm font-bold text-gray-500">
-      <a href="#" class="flex items-center gap-3 text-white bg-white/5 p-3 rounded-xl border border-white/10"><i data-lucide="layout-dashboard"></i> Overview</a>
-      <a href="#" class="flex items-center gap-3 hover:text-white p-3"><i data-lucide="shield"></i> Security</a>
-      <a href="#" class="flex items-center gap-3 hover:text-white p-3"><i data-lucide="bot"></i> AI Copilot</a>
-    </nav>
-    <div class="glass p-5 rounded-2xl"><div class="text-xs text-emerald-400 font-black animate-pulse">● AGENTS ONLINE</div></div>
-  </aside>
-  <main class="flex-1 p-12 overflow-y-auto">
-    <header class="flex justify-between items-center mb-12">
-      <h1 class="text-4xl font-black tracking-tight">Mission Control</h1>
-      <div class="text-xs font-bold text-cyan-400 glass px-6 py-2 rounded-full border-cyan-400/20 uppercase tracking-widest">Sahil-Hub-Cloud / ACIE</div>
-    </header>
-    <div class="grid grid-cols-4 gap-6 mb-12">
-      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Security</div><div class="text-4xl font-black text-emerald-400">98%</div></div>
-      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Code Quality</div><div class="text-4xl font-black text-white">96%</div></div>
-      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Leaks</div><div class="text-4xl font-black text-rose-500">0</div></div>
-      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Health</div><div class="text-4xl font-black text-cyan-400">94%</div></div>
+<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#010409] text-white p-20">
+    <h1 class="text-5xl font-black mb-10">Mission Control</h1>
+    <div class="p-10 border border-white/10 rounded-3xl bg-white/5">
+        <div class="text-emerald-400 text-4xl font-black">98% Security Score</div>
     </div>
-    <div class="glass p-12 h-80 flex flex-col items-center justify-center text-center">
-       <div class="text-4xl mb-4">🧠</div>
-       <h3 class="text-xl font-bold mb-2 uppercase tracking-widest">Predictive Neural Map</h3>
-       <p class="text-gray-500 text-sm italic">Scanning 2,504 infrastructure nodes...</p>
-    </div>
-  </main>
-  <script>lucide.createIcons();</script>
 </body></html>
