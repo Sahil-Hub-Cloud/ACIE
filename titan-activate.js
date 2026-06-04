@@ -1,4 +1,6 @@
-<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+import fs from 'fs';
+
+const UI_HEAD = `
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
@@ -10,7 +12,50 @@
     .pulse-green { width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #10b981; animation: p 2s infinite; }
     @keyframes p { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   </style>
+`;
+
+const landing = `<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>${UI_HEAD}
+<script>
+  function startScan() {
+    document.getElementById('overlay').classList.remove('hidden');
+    const steps = ["Connecting to Instance...", "Analyzing Architecture...", "Mapping 1,240 Nodes...", "Calculating Blast Radius...", "Generating Intelligence..."];
+    let i = 0;
+    const itv = setInterval(() => {
+      if(i < steps.length) {
+        document.getElementById('log').innerHTML += '<div class="text-cyan-400 mt-2">> ' + steps[i] + '</div>';
+        i++;
+      } else {
+        clearInterval(itv);
+        setTimeout(() => { window.location.href='/dashboard'; }, 800);
+      }
+    }, 700);
+  }
+</script>
 </head>
+<body class="flex flex-col items-center">
+  <div id="overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
+    <div class="w-96 font-mono text-sm">
+      <div class="text-gray-600 font-bold mb-4 tracking-[0.2em]">INTERNAL_SYSTEM_SCAN</div>
+      <div id="log"></div>
+      <div class="mt-8 h-1 bg-white/10 overflow-hidden"><div class="h-full bg-indigo-500 animate-pulse"></div></div>
+    </div>
+  </div>
+  <nav class="fixed top-0 w-full px-12 py-6 flex justify-between items-center z-50 border-b border-white/5 backdrop-blur-xl">
+    <div class="text-2xl font-black">⚡ ACIE</div>
+    <div class="flex gap-8 text-xs font-bold text-gray-500 items-center">
+      <span><span class="pulse-green"></span> SYSTEM LIVE</span>
+      <a href="/dashboard" class="text-white">DASHBOARD</a>
+      <button onclick="startScan()" class="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-500 transition-all">LAUNCH_CONSOLE</button>
+    </div>
+  </nav>
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <h1 class="text-7xl md:text-9xl font-black tracking-tighter mb-8 leading-[0.85]">Build. Secure.<br><span class="grad-txt">Automate. Scale.</span></h1>
+    <p class="text-gray-400 text-xl max-w-2xl mb-12 italic">"The All-in-One Google Maps for codebases."</p>
+    <button onclick="startScan()" class="px-12 py-6 bg-white text-black rounded-3xl font-black text-xl hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all">Scan Repository →</button>
+  </section>
+</body></html>`;
+
+const dashboard = `<!DOCTYPE html><html><head><title>ACIE — Command Center</title>${UI_HEAD}</head>
 <body class="flex h-screen overflow-hidden">
   <aside class="w-64 bg-black border-r border-white/5 p-8 flex flex-col gap-10">
     <div class="text-2xl font-black">⚡ ACIE</div>
@@ -48,4 +93,8 @@
     </div>
   </main>
   <script>lucide.createIcons();</script>
-</body></html>
+</body></html>`;
+
+fs.writeFileSync('./public/index.html', landing);
+fs.writeFileSync('./public/dashboard.html', dashboard);
+console.log('✅ INTELLIGENCE ACTIVATED IN PUBLIC FOLDER');
