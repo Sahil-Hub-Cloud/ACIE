@@ -1,1 +1,96 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>ACIE Dashboard</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#030712;color:#f1f5f9;overflow-x:hidden}.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}.orb1{width:500px;height:500px;background:radial-gradient(circle,rgba(139,92,246,.2),transparent 70%);top:-150px;right:-100px}.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);bottom:-100px;left:-100px}.nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,7,18,.8);backdrop-filter:blur(24px);border-bottom:1px solid rgba(139,92,246,.12)}.logo{display:flex;align-items:center;gap:10px;text-decoration:none}.logo-box{width:32px;height:32px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border-radius:7px;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff;box-shadow:0 0 16px rgba(139,92,246,.4)}.logo-name{font-size:17px;font-weight:700;color:#fff}.nav-links a{color:#64748b;text-decoration:none;font-size:13px;font-weight:500;margin-left:28px;transition:color .2s}.nav-links a:hover{color:#fff}.container{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:88px 24px 60px}.page-header{margin-bottom:36px}.page-title{font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px}.page-sub{color:#475569;font-size:14px;margin-top:6px}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}.stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px;backdrop-filter:blur(8px);transition:all .3s;position:relative;overflow:hidden}.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.4),transparent)}.stat-card:hover{border-color:rgba(139,92,246,.25);transform:translateY(-3px);box-shadow:0 12px 40px rgba(139,92,246,.1)}.stat-icon{font-size:20px;margin-bottom:12px}.stat-val{font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px}.stat-val.green{color:#10b981}.stat-val.blue{color:#3b82f6}.stat-val.purple{color:#8b5cf6}.stat-lbl{color:#475569;font-size:12px;margin-top:4px;font-weight:500}.cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:28px;backdrop-filter:blur(8px);transition:border-color .3s}.card:hover{border-color:rgba(139,92,246,.2)}.card-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:18px;display:flex;align-items:center;gap:8px}.card-title .dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:glow 2s infinite}@keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}.card p{color:#475569;font-size:14px;line-height:1.8}.card ol{padding-left:18px;color:#475569;font-size:14px;line-height:2}.risk-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}.risk-item:last-child{border:none}.rbadge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px}.low{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.2)}.med{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}.high{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}.rlabel{color:#64748b;font-size:13px}.notif-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#10b981}.notif-item:last-child{border:none}.full{grid-column:1/-1}.tag{display:inline-block;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);color:#a78bfa;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:500;margin:4px 4px 0 0}.foot{position:relative;z-index:1;text-align:center;padding:28px;border-top:1px solid rgba(255,255,255,.04);color:#334155;font-size:13px}.foot a{color:#8b5cf6;text-decoration:none}</style></head><body><div class="orb orb1"></div><div class="orb orb2"></div><nav class="nav"><a href="/" class="logo"><div class="logo-box">A</div><span class="logo-name">ACIE</span></a><div class="nav-links"><a href="/">Home</a><a href="/pricing">Pricing</a><a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a></div></nav><div class="container"><div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">AI Change Impact Engine — monitoring your codebase in real time</div></div><div class="stats-grid"><div class="stat-card"><div class="stat-icon">⚡</div><div class="stat-val green">Live</div><div class="stat-lbl">System status</div></div><div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-val blue">3</div><div class="stat-lbl">Risk levels</div></div><div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-val purple">3s</div><div class="stat-lbl">Avg response</div></div><div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val">100%</div><div class="stat-lbl">Uptime</div></div></div><div class="cards-grid"><div class="card"><div class="card-title"><span class="dot"></span>System Status</div><p>ACIE is actively monitoring all pull requests. Every PR gets a full blast radius and health score report within seconds of opening.</p></div><div class="card"><div class="card-title">🔍 How It Works</div><ol><li>Developer opens a Pull Request</li><li>ACIE scans all changed files</li><li>Maps import and export relationships</li><li>Calculates blast radius across the repo</li><li>Posts a risk report as a PR comment</li></ol></div><div class="card"><div class="card-title">🎯 Risk Levels</div><div class="risk-item"><span class="rbadge low">LOW</span><span class="rlabel">No files affected — safe to merge</span></div><div class="risk-item"><span class="rbadge med">MEDIUM</span><span class="rlabel">1–2 files affected or missing tests</span></div><div class="risk-item"><span class="rbadge high">HIGH</span><span class="rlabel">3+ files affected — review carefully</span></div></div><div class="card"><div class="card-title">📱 Notifications</div><div class="notif-item">✓ Slack connected and active</div><div class="notif-item">✓ GitHub App installed</div><div class="notif-item">✓ Webhook receiving events</div><div class="notif-item">✓ PR comments posting successfully</div></div><div class="card full"><div class="card-title">🛠️ Tech Stack</div><span class="tag">GitHub Apps</span><span class="tag">Vercel Serverless</span><span class="tag">Node.js</span><span class="tag">JS and TS Parser</span><span class="tag">Blast Radius Engine</span><span class="tag">Health Score</span><span class="tag">Slack API</span><span class="tag">Security Scanner</span></div></div></div><div class="foot">Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> &nbsp;·&nbsp; <a href="/">Home</a> &nbsp;·&nbsp; <a href="/pricing">Pricing</a></div></body></html>`);}
+export default async function handler(req, res) {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ACIE Dashboard — Intelligence Center</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#050505;color:#f1f5f9;display:flex;min-height:100vh}
+    
+    /* Sidebar */
+    .sidebar{width:260px;background:#0a0a0a;border-right:1px solid #1a1a1a;padding:32px 24px;display:flex;flex-direction:column}
+    .logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px;margin-bottom:48px}
+    .logo-box{width:32px;height:32px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border-radius:8px;display:grid;place-items:center}
+    .nav-item{padding:12px 16px;color:#64748b;text-decoration:none;font-size:14px;font-weight:500;border-radius:8px;margin-bottom:8px;transition:0.2s}
+    .nav-item.active{background:#1a1a1a;color:#fff}
+    .nav-item:hover:not(.active){color:#fff;background:#111}
+
+    /* Main Content */
+    .main{flex:1;padding:40px 48px;overflow-y:auto}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
+    h1{font-size:24px;font-weight:800;letter-spacing:-0.5px}
+    
+    /* Stat Cards */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px}
+    .stat-card{background:rgba(255,255,255,0.03);border:1px solid #1a1a1a;padding:24px;border-radius:16px}
+    .stat-val{font-size:28px;font-weight:800;margin-bottom:4px}
+    .stat-lbl{color:#475569;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+    
+    /* Activity Feed Area */
+    .content-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px}
+    .panel{background:rgba(255,255,255,0.02);border:1px solid #1a1a1a;border-radius:20px;padding:32px}
+    .panel-h{font-size:16px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 10px #10b981}
+    
+    .feed-item{padding:16px 0;border-bottom:1px solid #111;display:flex;justify-content:space-between;align-items:center}
+    .feed-item:last-child{border:none}
+    .f-info{display:flex;flex-direction:column;gap:4px}
+    .f-title{font-size:14px;font-weight:600;color:#fff}
+    .f-meta{font-size:12px;color:#475569}
+    .badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+    .b-green{background:#064e3b;color:#10b981}
+    .b-red{background:#451a1a;color:#ef4444}
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="logo"><div class="logo-box">A</div>ACIE</div>
+    <a href="/dashboard" class="nav-item active">Dashboard</a>
+    <a href="/history" class="nav-item">PR History</a>
+    <a href="/pricing" class="nav-item">Usage & Plans</a>
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="nav-item">Repository Settings</a>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>Intelligence Center</h1>
+      <div style="color:#64748b;font-size:14px">Sahil-Hub-Cloud / ACIE</div>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" style="color:#10b981">Live</div><div class="stat-lbl">System</div></div>
+      <div class="stat-card"><div class="stat-val">100%</div><div class="stat-lbl">Uptime</div></div>
+      <div class="stat-card"><div class="stat-val">3s</div><div class="stat-lbl">Response</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#8b5cf6">24</div><div class="stat-lbl">PRs Scanned</div></div>
+    </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Recent Activity</div>
+        <div class="feed-item">
+          <div class="f-info"><div class="f-title">PR #12: Update landing page UI</div><div class="f-meta">2 minutes ago • sahilshaik</div></div>
+          <span class="badge b-green">LOW RISK</span>
+        </div>
+        <div class="feed-item">
+          <div class="f-info"><div class="f-title">PR #11: Fix database connection</div><div class="f-meta">1 hour ago • sahilshaik</div></div>
+          <span class="badge b-red">HIGH RISK</span>
+        </div>
+        <div class="feed-item">
+          <div class="f-info"><div class="f-title">PR #10: Add new parser logic</div><div class="f-meta">3 hours ago • sahilshaik</div></div>
+          <span class="badge b-green">LOW RISK</span>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-h">Health Gauge</div>
+        <div style="height:150px;display:grid;place-items:center;font-size:48px;font-weight:900;color:#10b981">92%</div>
+        <p style="text-align:center;color:#475569;font-size:12px;font-weight:600">OVERALL REPO HEALTH</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(html);
+}
