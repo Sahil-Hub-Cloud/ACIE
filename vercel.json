@@ -6,15 +6,18 @@
     { "src": "api/landing.js", "use": "@vercel/node" },
     { "src": "api/pricing.js", "use": "@vercel/node" },
     { "src": "api/copilot.js", "use": "@vercel/node" },
-    { "src": "api/history.js", "use": "@vercel/node" },
-    { "src": "api/executive.js", "use": "@vercel/node" }
+    { "src": "api/executive.js", "use": "@vercel/node" },
+    { "src": "api/war-room.js", "use": "@vercel/node" },
+    { "src": "api/time-machine.js", "use": "@vercel/node" },
+    { "src": "api/history.js", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/api/github", "dest": "/api/github.js" },
     { "src": "/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/command-center", "dest": "/api/dashboard.js" },
-    { "src": "/executive", "dest": "/api/executive.js" },
+    { "src": "/war-room", "dest": "/api/war-room.js" },
+    { "src": "/time-machine", "dest": "/api/time-machine.js" },
     { "src": "/copilot", "dest": "/api/copilot.js" },
+    { "src": "/executive", "dest": "/api/executive.js" },
     { "src": "/pricing", "dest": "/api/pricing.js" },
     { "src": "/history", "dest": "/api/history.js" },
     { "src": "/", "dest": "/api/landing.js" }
