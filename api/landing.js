@@ -1,4 +1,46 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>${DEMO_ENGINE}</head><body>
+const DEMO_ENGINE = `
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background-color: #010409; font-family: 'Inter', sans-serif; color: #f8fafc; overflow-x:hidden; }
+    .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .grad-txt { background: linear-gradient(135deg, #fff 40%, #00d1ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .scan-line { width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #7c3aed, transparent); position: absolute; top: 0; animation: scan 3s infinite linear; }
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+    .typing::after { content: '|'; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+  <script>
+    function startScan() {
+      const overlay = document.getElementById('scan-overlay');
+      const log = document.getElementById('scan-log');
+      overlay.classList.remove('hidden');
+      const steps = [
+        "Connecting to GitHub Instance...",
+        "Analyzing Cluster Architecture...",
+        "Mapping 1,240 Dependency Nodes...",
+        "Calculating Blast Radius for /src/auth...",
+        "Detecting Vulnerabilities in Node_Modules...",
+        "Generating Intelligence Report..."
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        if(i < steps.length) {
+          log.innerHTML += '<div class="text-cyan-400 mt-1">> ' + steps[i] + '</div>';
+          i++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => { overlay.classList.add('hidden'); window.location.href='/dashboard'; }, 1000);
+        }
+      }, 800);
+    }
+  </script>
+`;
+
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(`<!DOCTYPE html><html><head>${DEMO_ENGINE}</head><body>
   <div id="scan-overlay" class="fixed inset-0 z-[200] bg-black flex items-center justify-center hidden">
     <div class="max-w-md w-full p-10 font-mono text-sm">
       <div class="mb-4 text-slate-500 font-bold tracking-widest">ACIE_SYSTEM_SCAN</div>
@@ -29,4 +71,5 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
        <div><div class="text-6xl font-black text-white">850K</div><div class="text-xs font-bold text-emerald-400 mt-4 uppercase">Risks Prevented</div></div>
     </div>
   </section>
-</body></html>`);}
+</body></html>`);
+}
