@@ -1,4 +1,6 @@
-<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+import fs from 'fs';
+
+const UI_HEAD = `
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
@@ -12,7 +14,38 @@
     .pulse { width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #10b981; animation: p 2s infinite; }
     @keyframes p { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   </style>
-</head>
+`;
+
+const landing = `<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>${UI_HEAD}</head>
+<body class="flex flex-col items-center">
+  <div class="aurora"></div>
+  <nav class="fixed top-0 w-full px-12 py-6 flex justify-between items-center z-50 border-b border-white/5 backdrop-blur-xl">
+    <div class="text-2xl font-black">⚡ ACIE</div>
+    <div class="flex gap-8 text-xs font-bold text-gray-500 items-center">
+      <span><span class="pulse"></span> SYSTEM LIVE</span>
+      <a href="/dashboard.html" class="text-white hover:text-cyan-400">DASHBOARD</a>
+      <a href="/dashboard.html" class="bg-indigo-600 text-white px-6 py-2 rounded-full hover:scale-105 transition-all">LAUNCH_PLATFORM</a>
+    </div>
+  </nav>
+
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <div class="mb-8 bg-white/5 border border-white/10 px-4 py-2 rounded-full text-[10px] font-black tracking-[0.3em] text-cyan-400 uppercase">Intelligence Layer V3 Active</div>
+    <h1 class="text-7xl md:text-9xl font-black tracking-tighter mb-8 leading-[0.85]">Build. Secure.<br><span class="grad-txt">Automate. Scale.</span></h1>
+    <p class="text-gray-400 text-xl max-w-2xl mb-12 italic">"The All-in-One Google Maps for codebases."</p>
+    <div class="flex gap-4">
+      <a href="/dashboard.html" class="px-12 py-6 bg-white text-black rounded-3xl font-black text-xl hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all">Start Free →</a>
+    </div>
+  </section>
+
+  <section class="py-20 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 px-6 pb-40">
+    <div class="glass p-10"><h3>AI Code Review</h3><p class="text-gray-500 mt-4">Deep structural logic auditing on every PR.</p></div>
+    <div class="glass p-10"><h3>Security Guard</h3><p class="text-gray-500 mt-4">Instant detection of secrets and API leaks.</p></div>
+    <div class="glass p-10"><h3>PR Intelligence</h3><p class="text-gray-500 mt-4">Predict architectural breaks before they happen.</p></div>
+  </section>
+  <script>lucide.createIcons();</script>
+</body></html>`;
+
+const dashboard = `<!DOCTYPE html><html><head><title>ACIE — Command Center</title>${UI_HEAD}</head>
 <body class="flex h-screen overflow-hidden">
   <aside class="w-64 bg-black border-r border-white/5 p-8 flex flex-col gap-10">
     <div class="text-2xl font-black">⚡ ACIE</div>
@@ -41,4 +74,16 @@
     </div>
   </main>
   <script>lucide.createIcons();</script>
-</body></html>
+</body></html>`;
+
+// Write to root
+fs.writeFileSync('index.html', landing);
+fs.writeFileSync('dashboard.html', dashboard);
+
+// Write to public folder if it exists
+if (fs.existsSync('./public')) {
+  fs.writeFileSync('./public/index.html', landing);
+  fs.writeFileSync('./public/dashboard.html', dashboard);
+}
+
+console.log('✅ OMEGA TITAN-V3 INFRASTRUCTURE BUILT');
