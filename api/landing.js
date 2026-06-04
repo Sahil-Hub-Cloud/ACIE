@@ -1,1 +1,79 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>ACIE - AI Change Impact Engine</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#030712;color:#f1f5f9;overflow-x:hidden}:root{--p:#8b5cf6;--b:#3b82f6;--c:#06b6d4;--g:#10b981}.noise{position:fixed;inset:0;opacity:.03;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");z-index:999}.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.25),transparent 70%);top:-200px;left:-200px}.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(59,130,246,.2),transparent 70%);bottom:-100px;right:-100px}.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(6,182,212,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%)}.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 48px;height:64px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,7,18,.7);backdrop-filter:blur(24px);border-bottom:1px solid rgba(139,92,246,.15)}.logo{display:flex;align-items:center;gap:10px;text-decoration:none}.logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--p),var(--b));border-radius:8px;display:grid;place-items:center;font-size:16px;font-weight:900;color:#fff;box-shadow:0 0 20px rgba(139,92,246,.4)}.logo-name{font-size:18px;font-weight:700;color:#fff;letter-spacing:-.5px}.nav-mid{display:flex;gap:32px}.nav-mid a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nav-mid a:hover{color:#fff}.nav-btn{background:linear-gradient(135deg,var(--p),var(--b));color:#fff;padding:9px 22px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;box-shadow:0 0 24px rgba(139,92,246,.35);transition:all .2s}.nav-btn:hover{box-shadow:0 0 32px rgba(139,92,246,.5);transform:translateY(-1px)}.hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px}.chip{display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);color:#a78bfa;font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px;margin-bottom:32px;letter-spacing:.5px}.chip-dot{width:6px;height:6px;border-radius:50%;background:#8b5cf6;animation:blink 2s infinite}@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 6px #8b5cf6}50%{opacity:.3;box-shadow:none}}.h1{font-size:clamp(42px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-3px;color:#fff;margin-bottom:24px}.h1 .g{background:linear-gradient(135deg,#8b5cf6,#3b82f6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.sub{font-size:18px;color:#64748b;max-width:520px;line-height:1.7;margin-bottom:48px;font-weight:400}.ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}.ca{background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:#fff;padding:15px 36px;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 0 40px rgba(139,92,246,.3);transition:all .3s}.ca:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(139,92,246,.5)}.cb{background:rgba(255,255,255,.04);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);padding:15px 36px;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;backdrop-filter:blur(8px);transition:all .2s}.cb:hover{background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.4)}.stats-row{position:relative;z-index:1;display:flex;justify-content:center;max-width:860px;margin:0 auto 80px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;overflow:hidden;backdrop-filter:blur(12px)}.st{flex:1;padding:32px 20px;text-align:center;border-right:1px solid rgba(255,255,255,.06)}.st:last-child{border:none}.st-n{font-size:34px;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px}.st-l{color:#475569;font-size:13px;margin-top:6px}.features{position:relative;z-index:1;padding:0 24px 100px;max-width:1100px;margin:0 auto}.sec-tag{color:#8b5cf6;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:12px}.sec-title{font-size:clamp(28px,4vw,44px);font-weight:800;color:#fff;text-align:center;margin-bottom:56px;letter-spacing:-1.5px}.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.fc{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:32px;transition:all .4s;overflow:hidden}.fc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(59,130,246,.04));opacity:0;transition:opacity .4s}.fc:hover{border-color:rgba(139,92,246,.35);transform:translateY(-6px);box-shadow:0 20px 60px rgba(139,92,246,.15)}.fc:hover::before{opacity:1}.fi{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(59,130,246,.1));border:1px solid rgba(139,92,246,.2);display:grid;place-items:center;font-size:22px;margin-bottom:20px;box-shadow:0 0 20px rgba(139,92,246,.15)}.fc h3{color:#fff;font-size:17px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px}.fc p{color:#475569;font-size:14px;line-height:1.7}.cta-s{position:relative;z-index:1;padding:0 24px 100px;text-align:center}.cta-box{max-width:640px;margin:0 auto;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:28px;padding:64px 48px;backdrop-filter:blur(16px);position:relative;overflow:hidden}.cta-box::before{content:'';position:absolute;width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,.15),transparent 70%);top:-100px;left:50%;transform:translateX(-50%)}.cta-box h2{font-size:38px;font-weight:800;color:#fff;margin-bottom:16px;letter-spacing:-1.5px}.cta-box p{color:#64748b;margin-bottom:36px;font-size:16px}.foot{position:relative;z-index:1;text-align:center;padding:28px;border-top:1px solid rgba(255,255,255,.05);color:#334155;font-size:13px}.foot a{color:#8b5cf6;text-decoration:none}</style></head><body><div class="noise"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div><nav class="nav"><a href="/" class="logo"><div class="logo-box">A</div><span class="logo-name">ACIE</span></a><div class="nav-mid"><a href="/dashboard">Dashboard</a><a href="/pricing">Pricing</a><a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a></div><a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="nav-btn">Get Started Free</a></nav><div class="hero"><div class="chip"><span class="chip-dot"></span>AI-Powered Code Intelligence</div><h1 class="h1">Google Maps for<br><span class="g">your codebase</span></h1><p class="sub">ACIE analyzes every Pull Request and tells developers exactly which files will break before they merge. Instant blast radius. Zero effort.</p><div class="ctas"><a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="ca">Get Started Free</a><a href="/dashboard" class="cb">View Dashboard</a></div></div><div class="stats-row"><div class="st"><div class="st-n">Auto</div><div class="st-l">PR Analysis</div></div><div class="st"><div class="st-n">3</div><div class="st-l">Risk Levels</div></div><div class="st"><div class="st-n">3s</div><div class="st-l">Report Speed</div></div><div class="st"><div class="st-n">0</div><div class="st-l">Setup Needed</div></div></div><div class="features"><div class="sec-tag">Features</div><div class="sec-title">Built for teams who ship fast</div><div class="fgrid"><div class="fc"><div class="fi">💥</div><h3>Blast Radius</h3><p>Scans the entire repository to find every file affected by your change before merging.</p></div><div class="fc"><div class="fi">🎯</div><h3>Risk Scoring</h3><p>Automatic LOW, MEDIUM, HIGH risk scores based on real dependency analysis.</p></div><div class="fc"><div class="fi">📊</div><h3>Health Score</h3><p>0 to 100 percent code health score per file — like Google Lighthouse for PRs.</p></div><div class="fc"><div class="fi">🛡️</div><h3>Security Scanner</h3><p>Detects hardcoded secrets and API keys before they ever reach production.</p></div><div class="fc"><div class="fi">📱</div><h3>Slack Alerts</h3><p>Instant Slack notifications the second a risky PR is opened by your team.</p></div><div class="fc"><div class="fi">⚡</div><h3>Instant Reports</h3><p>Detailed PR comment posted within 3 seconds of opening. Zero developer effort.</p></div></div></div><div class="cta-s"><div class="cta-box"><h2>Ready to ship safer code?</h2><p>Install ACIE on your GitHub repo in under 60 seconds. Free forever for solo developers.</p><a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="ca">Get Started Free</a></div></div><div class="foot">Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> &nbsp;·&nbsp; <a href="/dashboard">Dashboard</a> &nbsp;·&nbsp; <a href="/pricing">Pricing</a></div></body></html>`);}
+export default async function handler(req, res) {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ACIE — Google Maps for Codebases</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#050505;color:#f1f5f9;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    
+    /* Background FX */
+    .orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+    .orb1{width:600px;height:600px;background:radial-gradient(circle,#7c3aed33,transparent 70%);top:-200px;left:-100px}
+    .orb2{width:500px;height:500px;background:radial-gradient(circle,#3b82f622,transparent 70%);bottom:-100px;right:-100px}
+    
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:72px;padding:0 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,5,5,.7);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:800;color:#fff;font-size:20px}
+    .logo-box{width:36px;height:36px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border-radius:10px;display:grid;place-items:center;box-shadow:0 0 20px #8b5cf666}
+    .nav-links a{color:#94a3b8;text-decoration:none;font-size:14px;margin-left:32px;transition:0.2s}
+    .nav-links a:hover{color:#fff}
+
+    .hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+    .badge{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);color:#c4b5fd;font-size:12px;font-weight:600;padding:8px 20px;border-radius:30px;margin-bottom:30px;letter-spacing:1px;text-transform:uppercase}
+    .hero h1{font-size:clamp(48px,9vw,90px);font-weight:900;line-height:1;letter-spacing:-4px;color:#fff;margin-bottom:24px}
+    .grad{background:linear-gradient(to right,#fff,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:20px;color:#64748b;max-width:600px;line-height:1.6;margin-bottom:48px}
+    
+    .btn-main{background:#fff;color:#000;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:0.3s;box-shadow:0 0 30px rgba(255,255,255,0.2)}
+    .btn-main:hover{transform:translateY(-3px);box-shadow:0 0 50px rgba(255,255,255,0.4)}
+    
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1200px;margin:100px auto;padding:0 40px}
+    .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:40px;border-radius:24px;backdrop-filter:blur(10px);transition:0.4s}
+    .card:hover{border-color:rgba(139,92,246,0.4);transform:translateY(-10px)}
+    .card h3{font-size:20px;margin-bottom:12px;color:#fff}
+    .card p{color:#64748b;font-size:15px;line-height:1.6}
+    .icon{font-size:32px;margin-bottom:20px;display:block}
+  </style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <nav class="nav">
+    <a href="/" class="logo"><div class="logo-box">A</div>ACIE</a>
+    <div class="nav-links">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/pricing">Pricing</a>
+      <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
+    </div>
+  </nav>
+  <div class="hero">
+    <div class="badge">Next-Gen Code Intelligence</div>
+    <h1>Google Maps for<br><span class="grad">your codebase.</span></h1>
+    <p>Predict what will break before you merge. ACIE analyzes every Pull Request with surgical precision.</p>
+    <a href="/dashboard" class="btn-main">Launch Dashboard →</a>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <span class="icon">💥</span>
+      <h3>Blast Radius</h3>
+      <p>Scan the entire repository to find every single file affected by your change.</p>
+    </div>
+    <div class="card">
+      <span class="icon">🛡️</span>
+      <h3>Security Guard</h3>
+      <p>Automatically detect leaked API keys and hardcoded secrets before they ship.</p>
+    </div>
+    <div class="card">
+      <span class="icon">📊</span>
+      <h3>Health Score</h3>
+      <p>Get a 0-100% health metric for every file in your Pull Request instantly.</p>
+    </div>
+  </div>
+</body>
+</html>\`;
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(html);
+}`;
