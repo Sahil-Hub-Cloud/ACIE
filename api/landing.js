@@ -1,170 +1,140 @@
-export default async function handler(req, res) {
-  const html = `<!DOCTYPE html>
+export default async function handler(req,res){res.setHeader("Content-Type","text/html");const h=`<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ACIE — AI Change Impact Engine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #050507; color: #fff; overflow-x: hidden; }
-    
-    /* 3D Animated Aurora Background */
-    .aurora-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; opacity: 0.6; }
-    .aurora { position: absolute; width: 150vw; height: 150vh; top: -50%; left: -50%; background: conic-gradient(from 0deg, #ff0080, #7928ca, #0070f3, #00dfd8, #ff0080); animation: rotateAurora 12s linear infinite; filter: blur(120px); }
-    .aurora:nth-child(2) { animation-direction: reverse; opacity: 0.5; width: 100vw; height: 100vh; top: 0; left: 0; background: conic-gradient(from 90deg, #00dfd8, #0070f3, #7928ca, #ff0080, #00dfd8); }
-    @keyframes rotateAurora { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* Navbar */
-    nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; background: rgba(5,5,7,0.6); }
-    .logo { font-weight: 900; font-size: 24px; text-decoration: none; color: #fff; display: flex; align-items: center; gap: 10px; }
-    .logo span { background: linear-gradient(135deg, #fff 0%, #7928ca 50%, #ff0080 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: shimmerText 3s linear infinite; }
-    @keyframes shimmerText { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-    .nav-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; margin-left: 24px; font-weight: 500; transition: color 0.3s; }
-    .nav-links a:hover { color: #fff; }
-
-    /* Hero */
-    .hero { text-align: center; padding: 120px 24px 80px; max-width: 900px; margin: 0 auto; position: relative; z-index: 2; }
-    .pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 13px; font-weight: 600; padding: 8px 20px; border-radius: 100px; margin-bottom: 32px; box-shadow: 0 0 20px rgba(121,40,202,0.2); }
-    .dot { width: 8px; height: 8px; background: #00dfd8; border-radius: 50%; animation: pulseDot 2s infinite; }
-    @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(0,223,216,0.7); } 70% { box-shadow: 0 0 0 10px rgba(0,223,216,0); } 100% { box-shadow: 0 0 0 0 rgba(0,223,216,0); } }
-    .hero h1 { font-size: 80px; font-weight: 900; line-height: 0.95; margin-bottom: 28px; letter-spacing: -3px; text-transform: uppercase; }
-    .holographic-text { background: linear-gradient(90deg, #fff, #7928ca, #ff0080, #0070f3, #fff); background-size: 400% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmerText 6s linear infinite; }
-    .hero p { font-size: 20px; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 48px; max-width: 600px; margin-left: auto; margin-right: auto; }
-    .buttons { display: flex; gap: 16px; justify-content: center; }
-    .btn-primary { background: linear-gradient(135deg, #7928ca, #ff0080); color: #fff; padding: 18px 36px; border-radius: 14px; font-size: 16px; font-weight: 700; text-decoration: none; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 10px 40px rgba(121,40,202,0.4); border: 1px solid rgba(255,255,255,0.1); }
-    .btn-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 20px 60px rgba(121,40,202,0.6); }
-    .btn-secondary { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 18px 36px; border-radius: 14px; font-size: 16px; font-weight: 700; text-decoration: none; transition: transform 0.3s, background 0.3s; backdrop-filter: blur(10px); }
-    .btn-secondary:hover { transform: translateY(-3px); background: rgba(255,255,255,0.08); }
-
-    /* Features 3D Grid */
-    .features { padding: 80px 24px; max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; }
-    .section-title { text-align: center; font-size: 48px; font-weight: 900; margin-bottom: 60px; letter-spacing: -2px; text-transform: uppercase; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; perspective: 1000px; }
-    .card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 40px 32px; backdrop-filter: blur(20px); transition: transform 0.5s cubic-bezier(0.03, 0.98, 0.52, 0.99), box-shadow 0.5s ease, border-color 0.5s ease; transform-style: preserve-3d; box-shadow: 0 0 0 1px rgba(255,255,255,0.05); position: relative; overflow: hidden; }
-    .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(121,40,202,0.15), transparent 60%); opacity: 0; transition: opacity 0.3s; z-index: -1; }
-    .card:hover { transform: translateY(-10px) rotateX(10deg) rotateY(-10deg) scale(1.02); border-color: rgba(121,40,202,0.4); box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 30px rgba(121,40,202,0.2); }
-    .card:hover::before { opacity: 1; }
-    .card .icon { font-size: 48px; margin-bottom: 24px; text-shadow: 0 0 20px rgba(121,40,202,0.5); }
-    .card h3 { font-size: 22px; font-weight: 700; margin-bottom: 14px; color: #fff; transform: translateZ(20px); }
-    .card p { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.7; transform: translateZ(10px); }
-
-    /* CTA */
-    .cta { text-align: center; padding: 100px 24px; position: relative; z-index: 2; }
-    .cta h2 { font-size: 64px; font-weight: 900; margin-bottom: 20px; letter-spacing: -2px; text-transform: uppercase; }
-    .cta p { color: rgba(255,255,255,0.5); font-size: 20px; margin-bottom: 48px; }
-
-    /* Footer */
-    footer { text-align: center; padding: 40px; border-top: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); font-size: 14px; position: relative; z-index: 2; }
-    footer a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.3s; }
-    footer a:hover { color: #ff0080; }
-
-    /* Mouse tracking script for 3D tilt */
-    .tilt-card { transform-style: preserve-3d; }
-
-    @media (max-width: 768px) {
-      .hero h1 { font-size: 48px; letter-spacing: -1px; }
-      .grid { grid-template-columns: 1fr; }
-      .section-title { font-size: 32px; }
-      .cta h2 { font-size: 40px; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ACIE - AI Change Impact Engine</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;overflow-x:hidden}
+:root{--purple:#7c3aed;--blue:#3b82f6;--cyan:#06b6d4;--green:#10b981;--pink:#ec4899}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,14,26,0.8);backdrop-filter:blur(20px);border-bottom:1px solid rgba(124,58,237,0.2);padding:16px 48px;display:flex;justify-content:space-between;align-items:center}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#3b82f6);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.logo-text{font-size:20px;font-weight:700;color:#fff}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{color:#94a3b8;text-decoration:none;font-size:14px;transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-cta{background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .2s}
+.nav-cta:hover{opacity:.9}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;width:800px;height:800px;background:radial-gradient(circle,rgba(124,58,237,0.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,0.1) 0%,transparent 70%);top:20%;right:10%;pointer-events:none}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.4);color:#a78bfa;font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px;margin-bottom:32px;letter-spacing:.5px}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#7c3aed;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.5)}}
+.hero h1{font-size:clamp(40px,7vw,72px);font-weight:800;line-height:1.1;letter-spacing:-2px;color:#fff;margin-bottom:24px}
+.hero h1 .grad{background:linear-gradient(135deg,#7c3aed,#3b82f6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:18px;color:#94a3b8;max-width:560px;line-height:1.7;margin-bottom:48px}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;padding:16px 36px;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,58,237,0.4)}
+.btn-secondary{background:rgba(255,255,255,0.05);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);padding:16px 36px;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none;transition:all .2s}
+.btn-secondary:hover{background:rgba(255,255,255,0.1);border-color:rgba(124,58,237,0.5)}
+.stats{display:flex;justify-content:center;gap:0;margin:80px auto;max-width:800px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden}
+.stat{flex:1;padding:32px 24px;text-align:center;border-right:1px solid rgba(255,255,255,0.08)}
+.stat:last-child{border-right:none}
+.stat-num{font-size:36px;font-weight:800;background:linear-gradient(135deg,#7c3aed,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{color:#64748b;font-size:13px;margin-top:6px}
+.section{padding:80px 24px;max-width:1100px;margin:0 auto}
+.section-tag{color:#7c3aed;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;text-align:center}
+.section-title{font-size:clamp(28px,4vw,42px);font-weight:700;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:-1px}
+.section-sub{color:#64748b;font-size:16px;text-align:center;margin-bottom:56px;max-width:500px;margin-left:auto;margin-right:auto}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;transition:all .3s;position:relative;overflow:hidden}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,0.5),transparent);opacity:0;transition:opacity .3s}
+.feature-card:hover{border-color:rgba(124,58,237,0.3);transform:translateY(-4px);background:rgba(124,58,237,0.05)}
+.feature-card:hover::before{opacity:1}
+.feature-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;background:rgba(124,58,237,0.15)}
+.feature-card h3{color:#fff;font-size:17px;font-weight:600;margin-bottom:10px}
+.feature-card p{color:#64748b;font-size:14px;line-height:1.7}
+.demo-section{padding:80px 24px;background:rgba(124,58,237,0.03);border-top:1px solid rgba(124,58,237,0.1);border-bottom:1px solid rgba(124,58,237,0.1)}
+.demo-inner{max-width:900px;margin:0 auto}
+.demo-window{background:#0d1117;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.5)}
+.demo-bar{background:#161b22;padding:12px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.dot{width:12px;height:12px;border-radius:50%}
+.demo-title{color:#64748b;font-size:13px;margin-left:8px}
+.demo-body{padding:28px;font-family:'Courier New',monospace;font-size:13px;line-height:2}
+.c1{color:#58a6ff;font-weight:600}.c2{color:#3fb950}.c3{color:#d29922}.c4{color:#f85149}.c5{color:#8b949e}
+.cta-section{padding:100px 24px;text-align:center}
+.cta-box{max-width:600px;margin:0 auto;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:24px;padding:60px 48px}
+.cta-box h2{font-size:36px;font-weight:700;color:#fff;margin-bottom:16px;letter-spacing:-1px}
+.cta-box p{color:#64748b;margin-bottom:36px;font-size:16px}
+footer{text-align:center;padding:32px;border-top:1px solid rgba(255,255,255,0.06);color:#475569;font-size:13px}
+footer a{color:#7c3aed;text-decoration:none}
+</style>
 </head>
 <body>
-  <div class="aurora-bg">
-    <div class="aurora"></div>
-    <div class="aurora"></div>
+<nav class="nav">
+  <a href="/" class="nav-logo"><div class="logo-icon">A</div><span class="logo-text">ACIE</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/pricing">Pricing</a>
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="nav-cta">Get Started Free</a>
   </div>
-
-  <nav>
-    <a href="/" class="logo">⚡ <span>ACIE</span></a>
-    <div class="nav-links">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/pricing">Pricing</a>
-      <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
+</nav>
+<div class="hero">
+  <div class="badge"><span class="badge-dot"></span>AI-Powered Code Intelligence</div>
+  <h1>Google Maps for<br><span class="grad">your codebase</span></h1>
+  <p>ACIE analyzes every Pull Request and tells developers exactly which files will break before they merge. Instant blast radius reports, risk scoring, and health checks.</p>
+  <div class="hero-btns">
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="btn-primary">Get Started Free →</a>
+    <a href="/dashboard" class="btn-secondary">View Dashboard</a>
+  </div>
+</div>
+<div style="max-width:1100px;margin:0 auto;padding:0 24px">
+  <div class="stats">
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">PRs Analyzed</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Risk Levels</div></div>
+    <div class="stat"><div class="stat-num">&lt;3s</div><div class="stat-label">Report Speed</div></div>
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Automatic</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-tag">Features</div>
+  <div class="section-title">Everything your team needs</div>
+  <div class="section-sub">Built for modern engineering teams who ship fast and need to ship safe.</div>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">💥</div><h3>Blast Radius Detection</h3><p>Scans the entire repository to find every file affected by your change before merging.</p></div>
+    <div class="feature-card"><div class="feature-icon">🎯</div><h3>Risk Scoring</h3><p>Automatic LOW, MEDIUM, HIGH scores based on real dependency and complexity analysis.</p></div>
+    <div class="feature-card"><div class="feature-icon">📊</div><h3>Health Score</h3><p>0-100% code health score per file — like Google Lighthouse but for your pull requests.</p></div>
+    <div class="feature-card"><div class="feature-icon">🛡️</div><h3>Security Scanner</h3><p>Detects hardcoded secrets, API keys, and passwords before they reach production.</p></div>
+    <div class="feature-card"><div class="feature-icon">📱</div><h3>Slack Alerts</h3><p>Instant Slack notifications the second a risky PR is opened by your team.</p></div>
+    <div class="feature-card"><div class="feature-icon">⚡</div><h3>Instant Reports</h3><p>Detailed PR comment posted within 3 seconds of opening. Zero developer effort.</p></div>
+  </div>
+</div>
+<div class="demo-section">
+  <div class="demo-inner">
+    <div class="section-tag" style="text-align:center;margin-bottom:12px">Live Example</div>
+    <div class="section-title" style="margin-bottom:32px">What ACIE posts on your PR</div>
+    <div class="demo-window">
+      <div class="demo-bar"><div class="dot" style="background:#f85149"></div><div class="dot" style="background:#d29922"></div><div class="dot" style="background:#3fb950"></div><span class="demo-title">ACIE — Change Impact Report</span></div>
+      <div class="demo-body">
+        <div class="c1">## ACIE — Change Impact Report</div>
+        <div class="c5">### Health Score: 75%</div>
+        <div class="c5">| Metric | Value |</div>
+        <div class="c5">| Risk Level | MEDIUM |</div>
+        <div class="c5">| Files Analyzed | 2 |</div>
+        <div class="c5">| Blast Radius | 1 file |</div>
+        <div class="c1">### File Analysis</div>
+        <div class="c2">src/auth.ts — 100% — 3 exports — 2 imports — none</div>
+        <div class="c3">src/payment.ts — 50% — 1 export — 4 imports — deep nesting</div>
+        <div class="c1">### Blast Radius</div>
+        <div class="c4">src/checkout.ts</div>
+        <div class="c1">### Recommendation</div>
+        <div class="c3">Medium risk — review before merging.</div>
+      </div>
     </div>
-  </nav>
-
-  <div class="hero">
-    <div class="pill"><span class="dot"></span> Public Beta Live</div>
-    <h1>The Google Maps for <br><span class="holographic-text">your codebase</span></h1>
-    <p>Stop guessing what your code changes will break. ACIE maps your dependencies, scores your risk, and blocks bad code before it's merged.</p>
-    <div class="buttons">
-      <a href="https://github.com/apps/acie-bot" class="btn-primary">Install ACIE Free →</a>
-      <a href="/dashboard" class="btn-secondary">View Dashboard</a>
-    </div>
   </div>
-
-  <div class="features">
-    <h2 class="section-title">3D Code <span class="holographic-text">Intelligence</span></h2>
-    <div class="grid" id="card-grid">
-      <div class="card tilt-card">
-        <div class="icon">💥</div>
-        <h3>Blast Radius Engine</h3>
-        <p>Instantly maps every file affected by a PR across your entire repository. No more surprise breaks.</p>
-      </div>
-      <div class="card tilt-card">
-        <div class="icon">🎯</div>
-        <h3>0-100% Health Score</h3>
-        <p>Quantitative code quality scoring based on complexity, security, and style. Just like Lighthouse for code.</p>
-      </div>
-      <div class="card tilt-card">
-        <div class="icon">🛡️</div>
-        <h3>Security Shield</h3>
-        <p>Detects hardcoded secrets, API keys, and passwords. Automatically blocks merging until fixed.</p>
-      </div>
-      <div class="card tilt-card">
-        <div class="icon">🚦</div>
-        <h3>Merge Gatekeeper</h3>
-        <p>Turns the GitHub merge button red ❌ for high-risk PRs. Enforce quality without leaving GitHub.</p>
-      </div>
-      <div class="card tilt-card">
-        <div class="icon">🎨</div>
-        <h3>Style Guardian</h3>
-        <p>Flags mixed naming conventions (like snake_case in JS) so your codebase stays clean and uniform.</p>
-      </div>
-      <div class="card tilt-card">
-        <div class="icon">📱</div>
-        <h3>Instant Alerts</h3>
-        <p>Real-time Slack and Email notifications the second a risky PR is opened. Never miss a critical review.</p>
-      </div>
-    </div>
+</div>
+<div class="cta-section">
+  <div class="cta-box">
+    <h2>Ready to ship safer code?</h2>
+    <p>Install ACIE on your GitHub repo in under 60 seconds. Free forever for solo developers.</p>
+    <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="btn-primary">Get Started Free →</a>
   </div>
-
-  <div class="cta">
-    <h2>Ready to ship <span class="holographic-text">safer code?</span></h2>
-    <p>Install ACIE on your GitHub repo in under 60 seconds.</p>
-    <a href="https://github.com/apps/acie-bot" class="btn-primary">Install ACIE Free →</a>
-  </div>
-
-  <footer>
-    Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> · <a href="/dashboard">Dashboard</a> · <a href="/pricing">Pricing</a>
-  </footer>
-
-  <script>
-    // 3D Tilt Effect on Mouse Move
-    const cards = document.querySelectorAll('.tilt-card');
-    cards.forEach(card => {
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const rotateX = (y - centerY) / 10;
-        const rotateY = (centerX - x) / 10;
-        card.style.transform = \`translateY(-10px) rotateX(\${rotateX}deg) rotateY(\${rotateY}deg) scale(1.02)\`;
-        card.style.setProperty('--mouse-x', x + 'px');
-        card.style.setProperty('--mouse-y', y + 'px');
-      });
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'translateY(0) rotateX(0) rotateY(0) scale(1)';
-      });
-    });
-  </script>
+</div>
+<footer>Built by <a href="https://github.com/Sahil-Hub-Cloud">Sahil-Hub-Cloud</a> · <a href="/dashboard">Dashboard</a> · <a href="/pricing">Pricing</a> · <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a></footer>
 </body>
-</html>`;
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(html);
-}
+</html>return res.status(200).send(h);}
