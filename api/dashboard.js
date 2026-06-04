@@ -1,1 +1,41 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>ACIE Dashboard</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#050505;color:#fff;display:flex;min-height:100vh}.sidebar{width:280px;background:#080808;border-right:1px solid #1a1a1a;padding:40px 24px}.logo{display:flex;align-items:center;gap:12px;font-weight:900;font-size:18px;margin-bottom:60px}.logo-box{width:32px;height:32px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border-radius:8px;display:grid;place-items:center}.nav-link{display:block;padding:14px 20px;color:#64748b;text-decoration:none;border-radius:12px;margin-bottom:10px;font-weight:600;transition:0.2s}.nav-link:hover,.nav-link.active{background:#111;color:#fff}.main{flex:1;padding:60px}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:50px}h1{font-size:32px;font-weight:900;letter-spacing:-1.5px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px}.stat-c{background:#0a0a0a;border:1px solid #1a1a1a;padding:30px;border-radius:24px}.val{font-size:32px;font-weight:900;margin-bottom:4px}.lbl{color:#475569;font-size:12px;font-weight:700;text-transform:uppercase}.panel{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:32px;padding:40px}.panel-h{font-size:18px;font-weight:800;margin-bottom:30px;display:flex;align-items:center;gap:12px}.dot{width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 15px #10b981}</style></head><body><div class="sidebar"><div class="logo"><div class="logo-box">A</div>ACIE</div><a href="#" class="nav-link active">Overview</a><a href="/history" class="nav-link">PR History</a><a href="/pricing" class="nav-link">Billing</a></div><div class="main"><div class="header"><h1>Intelligence Center</h1></div><div class="stats"><div class="stat-c"><div class="val" style="color:#10b981">Active</div><div class="lbl">System</div></div><div class="stat-c"><div class="val">100%</div><div class="lbl">Uptime</div></div><div class="stat-c"><div class="val">2.4s</div><div class="lbl">Latency</div></div><div class="stat-c"><div class="val" style="color:#8b5cf6">48</div><div class="lbl">Analyses</div></div></div><div class="panel"><div class="panel-h"><div class="dot"></div>Real-time Stream</div><p style="color:#64748b">All systems operational. Waiting for next Pull Request inbound...</p></div></div></body></html>`);}
+export default async function handler(req, res) {
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>ACIE Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { color: #58a6ff; font-size: 24px; }
+    .container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; }
+    .card h2 { font-size: 16px; color: #58a6ff; margin-bottom: 12px; }
+    .card p { color: #8b949e; font-size: 14px; line-height: 1.6; }
+    .footer { text-align: center; color: #484f58; font-size: 13px; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚡ ACIE Dashboard</h1>
+    <a href="/" style="color:#58a6ff; text-decoration:none;">Home</a>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>📡 Status: Live</h2>
+        <p>ACIE is monitoring all pull requests. Every PR gets an automatic blast radius report.</p>
+      </div>
+      <div class="card">
+        <h2>🔍 Intelligence</h2>
+        <p>The engine is processing imports, exports, and security risks in real-time.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><p>Built by Sahil-Hub-Cloud</p></div>
+</body>
+</html>`;
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(html);
+}
