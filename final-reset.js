@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+import fs from 'fs';
+
+const UI = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -19,4 +21,17 @@
         <a href="/dashboard.html" class="px-10 py-5 bg-white text-black rounded-2xl font-bold text-xl hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">Launch Console →</a>
     </div>
 </body>
-</html>
+</html>`;
+
+const DASH = `<!DOCTYPE html><html><head><title>ACIE Dashboard</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#010409] text-white p-10">
+    <h1 class="text-4xl font-black mb-10">Mission Control</h1>
+    <div class="grid grid-cols-2 gap-6">
+        <div class="p-10 border border-white/10 rounded-3xl bg-white/5"><h3>Security</h3><div class="text-4xl font-black text-emerald-400">98%</div></div>
+        <div class="p-10 border border-white/10 rounded-3xl bg-white/5"><h3>Quality</h3><div class="text-4xl font-black">96%</div></div>
+    </div>
+</body></html>`;
+
+fs.writeFileSync('./public/index.html', UI);
+fs.writeFileSync('./public/dashboard.html', DASH);
+console.log('✅ OMEGA CORE WRITTEN TO PUBLIC FOLDER');
