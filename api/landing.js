@@ -1,42 +1,70 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap');
-  :root { --bg: #010309; --glass: rgba(255,255,255,0.02); --border: rgba(255,255,255,0.08); --cyan: #00d1ff; --purple: #7c3aed; --green: #10b981; --red: #ff0055; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-  .aurora { position: fixed; inset: 0; background: radial-gradient(circle at 20% 20%, #4338ca10 0, transparent 40%), radial-gradient(circle at 80% 80%, #6d28d910 0, transparent 40%); filter: blur(100px); z-index: -1; }
-  .glass { background: var(--glass); backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: 20px; transition: 0.4s; }
-  .grad-txt { background: linear-gradient(135deg, #fff 40%, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .pulse-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite; margin-right: 8px; }
-  @keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
+export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; }
+    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .aurora { position: fixed; inset: 0; filter: blur(100px); z-index: -1; opacity: 0.5; }
+    .orb { position: absolute; border-radius: 50%; animation: float 20s infinite alternate; }
+    .orb-p { width: 600px; height: 600px; background: radial-gradient(circle, #7c3aed33, transparent 70%); top: -200px; left: -100px; }
+    .orb-c { width: 500px; height: 500px; background: radial-gradient(circle, #06b6d422, transparent 70%); bottom: -100px; right: -100px; }
+    @keyframes float { from { transform: translate(0,0); } to { transform: translate(100px, 50px); } }
+    .neon-border { border: 1px solid transparent; background-image: linear-gradient(#020617, #020617), linear-gradient(135deg, #7c3aed, #06b6d4); background-origin: border-box; background-clip: padding-box, border-box; }
+    .grad-txt { background: linear-gradient(135deg, #fff 40%, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brain-pulse { animation: brain-glow 4s infinite alternate; }
+    @keyframes brain-glow { from { filter: drop-shadow(0 0 10px #7c3aed33); } to { filter: drop-shadow(0 0 40px #7c3aed88); } }
+  </style>
+</head><body>
+  <div class="aurora"><div class="orb orb-p"></div><div class="orb orb-c"></div></div>
+  <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-12 py-5 flex justify-between items-center">
+    <div class="text-2xl font-extrabold flex items-center gap-2"><span class="text-cyan-400">⚡</span> ACIE</div>
+    <div class="flex gap-10 text-sm font-semibold text-slate-400">
+      <a href="/dashboard" class="hover:text-white transition-colors">Platform</a>
+      <a href="/copilot" class="hover:text-white transition-colors">AI Copilot</a>
+      <a href="/pricing" class="hover:text-white transition-colors">Pricing</a>
+      <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="bg-white text-black px-6 py-2 rounded-full hover:scale-105 transition-transform">Get Started</a>
+    </div>
+  </nav>
 
-  .nav { position:fixed; top:0; width:100%; height:80px; display:flex; align-items:center; justify-content:space-between; padding:0 60px; z-index:100; border-bottom:1px solid var(--border); background:rgba(1,3,9,0.8); backdrop-filter:blur(12px); }
-  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 24px; }
-  h1 { font-size: clamp(40px, 8vw, 90px); font-weight: 800; line-height: 0.9; margin-bottom: 24px; letter-spacing: -4px; }
-  .btn { padding: 18px 48px; border-radius: 100px; font-weight: 700; text-decoration: none; transition: 0.3s; font-size: 15px; background: #fff; color: #000; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
-  .terminal { width: 100%; max-width: 700px; height: 180px; background: #000; border: 1px solid var(--border); border-radius: 12px; margin-top: 50px; padding: 20px; font-family: 'Space Mono'; font-size: 12px; color: var(--cyan); text-align: left; overflow: hidden; }
-  .f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1200px; margin: 100px auto; padding: 0 40px; }
-  .f-card { padding: 32px; height: 100%; }
-  .f-card:hover { border-color: var(--purple); transform: translateY(-8px); }
-  .icon { font-size: 28px; margin-bottom: 20px; display: block; }
-  footer { padding: 60px; text-align: center; border-top: 1px solid var(--border); color: #475569; font-size: 13px; }
-</style></head><body>
-  <div class="aurora"></div>
-  <nav class="nav"><div style="font-weight:800; font-size:24px;">⚡ ACIE</div><div style="display:flex; gap:40px; font-size:14px;"><a href="/dashboard" style="color:#fff; text-decoration:none;">Platform</a><a href="/pricing" style="color:#fff; text-decoration:none;">Pricing</a></div></nav>
-  <div class="hero">
-    <div style="color:var(--cyan); font-weight:800; letter-spacing:2px; margin-bottom:20px; font-size:11px;">BUILD ● SECURE ● AUTOMATE ● SCALE</div>
-    <h1>The All-in-One<br><span class="grad-txt">Google Maps for codebases.</span></h1>
-    <p style="color:#8b949e; font-size:20px; max-width:650px; margin-bottom:48px;">AI-Powered DevSecOps Intelligence Platform for modern engineering teams.</p>
-    <a href="/dashboard" class="btn">Get Started Free</a>
-    <div class="terminal"><div>[SYSTEM] Initiating Neural Scan...</div><div style="color:var(--green)">[SCAN] 254 dependency nodes mapped.</div><div style="color:var(--red)">[WARN] Circular import found in /api/v1/auth.js</div><div>[LOG] Risk Assessment: MEDIUM (84%)</div></div>
-  </div>
-  <div style="text-align:center;"><h2 style="font-size:42px;">Powerful Features</h2></div>
-  <div class="f-grid">
-    <div class="glass f-card"><span class="icon">🧠</span><h3>AI Code Review</h3><p style="color:#8b949e; margin-top:10px;">Automated deep-logic analysis for every pull request.</p></div>
-    <div class="glass f-card"><span class="icon">🛡️</span><h3>Security Guard</h3><p style="color:#8b949e; margin-top:10px;">Instant detection of hardcoded secrets and leaked keys.</p></div>
-    <div class="glass f-card"><span class="icon">🔍</span><h3>Vulnerability Map</h3><p style="color:#8b949e; margin-top:10px;">Real-time threat hunting across your repository.</p></div>
-    <div class="glass f-card"><span class="icon">⚡</span><h3>PR Intelligence</h3><p style="color:#8b949e; margin-top:10px;">Predict architectural breaks before you merge.</p></div>
-    <div class="glass f-card"><span class="icon">🚀</span><h3>CI/CD Optimizer</h3><p style="color:#8b949e; margin-top:10px;">Optimize your build pipeline with AI-driven insights.</p></div>
-    <div class="glass f-card"><span class="icon">⚖️</span><h3>Compliance</h3><p style="color:#8b949e; margin-top:10px;">Automate SOC2, GDPR, and ISO27001 readiness.</p></div>
-  </div>
-  <footer>Built by Sahil-Hub-Cloud &copy; 2026</footer>
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <div class="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-4 py-2 rounded-full text-xs font-bold tracking-widest mb-8">
+      <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span> SYSTEM LEVEL: TITAN ACTIVE
+    </div>
+    <h1 class="text-7xl md:text-9xl font-extrabold tracking-tighter mb-8 leading-[0.85]">Build. Secure.<br><span class="grad-txt">Automate. Scale.</span></h1>
+    <p class="text-slate-400 text-xl max-w-2xl mb-12">The AI-Powered DevSecOps Intelligence Platform. <br>The All-in-One <span class="text-white font-bold">Google Maps for codebases.</span></p>
+    <div class="flex gap-4">
+      <button class="px-10 py-5 bg-white text-black rounded-2xl font-bold text-lg hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all">Start Free</button>
+      <button class="px-10 py-5 glass rounded-2xl font-bold text-lg">Book Demo</button>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-12 mt-32 w-full max-w-5xl">
+       <div><div class="text-4xl font-bold text-white">250+</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Repositories</div></div>
+       <div><div class="text-4xl font-bold text-cyan-400">98%</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Security Score</div></div>
+       <div><div class="text-4xl font-bold text-purple-400">96%</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Code Quality</div></div>
+       <div><div class="text-4xl font-bold text-emerald-400">125+</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">AI Predictions</div></div>
+    </div>
+  </section>
+
+  <section class="py-32 px-12">
+    <h2 class="text-5xl font-extrabold text-center mb-20 tracking-tighter">Powered by <span class="text-cyan-400">Intelligence.</span></h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+       <div class="glass p-10 hover:border-indigo-500/50 transition-all group">
+         <div class="text-4xl mb-6">🧠</div>
+         <h3 class="text-2xl font-bold mb-4">AI Code Review</h3>
+         <p class="text-slate-500">Automated structural and logic analysis for every single pull request.</p>
+       </div>
+       <div class="glass p-10 hover:border-cyan-500/50 transition-all">
+         <div class="text-4xl mb-6">🛡️</div>
+         <h3 class="text-2xl font-bold mb-4">Security Scanning</h3>
+         <p class="text-slate-500">Instant detection of hardcoded secrets and leaked API keys.</p>
+       </div>
+       <div class="glass p-10 hover:border-emerald-500/50 transition-all">
+         <div class="text-4xl mb-6">⚡</div>
+         <h3 class="text-2xl font-bold mb-4">PR Intelligence</h3>
+         <p class="text-slate-500">Predictive impact analysis and blast radius mapping across modules.</p>
+       </div>
+    </div>
+  </section>
 </body></html>`);}
