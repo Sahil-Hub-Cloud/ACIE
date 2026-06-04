@@ -1,1 +1,39 @@
-export default async function handler(req,res){res.setHeader("Content-Type","text/html");const h="<html><head><title>ACIE Pricing</title></head><body style=background:#080c14;color:#c9d1d9;font-family:sans-serif;padding:40px><nav style=margin-bottom:32px><a href=/ style=color:#58a6ff;text-decoration:none;font-weight:700;font-size:18px>ACIE</a><a href=/dashboard style=color:#8b949e;text-decoration:none;margin-left:24px;font-size:14px>Dashboard</a><a href=https://github.com/Sahil-Hub-Cloud/ACIE style=color:#8b949e;text-decoration:none;margin-left:24px;font-size:14px>GitHub</a></nav><h1 style=color:#fff;font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-1px>Simple pricing</h1><p style=color:#8b949e;font-size:16px;margin-bottom:40px>Start free. Upgrade when your team grows.</p><div style=display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:900px><div style=background:#0d1117;border:1px_solid_#21262d;border-radius:16px;padding:32px><div style=color:#8b949e;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px>Free</div><div style=font-size:42px;font-weight:700;color:#fff;margin-bottom:4px>$0<span style=font-size:15px;color:#8b949e;font-weight:400>/mo</span></div><div style=color:#8b949e;font-size:13px;margin-bottom:24px>Perfect for solo developers</div><div style=color:#c9d1d9;font-size:14px;line-height:2>1 GitHub repo<br>Blast radius detection<br>Risk scoring<br>PR comments<br>50 PRs per month</div></div><div style=background:#0a1628;border:2px_solid_#388bfd;border-radius:16px;padding:32px;position:relative><div style=position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#388bfd;color:#fff;font-size:11px;font-weight:700;padding:4px_16px;border-radius:20px;white-space:nowrap>MOST POPULAR</div><div style=color:#8b949e;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px>Pro</div><div style=font-size:42px;font-weight:700;color:#fff;margin-bottom:4px>$29<span style=font-size:15px;color:#8b949e;font-weight:400>/mo</span></div><div style=color:#8b949e;font-size:13px;margin-bottom:24px>For teams that ship every day</div><div style=color:#c9d1d9;font-size:14px;line-height:2>10 GitHub repos<br>Blast radius detection<br>Risk scoring<br>PR comments<br>Unlimited PRs<br>Slack notifications<br>Email reports</div></div><div style=background:#0d1117;border:1px_solid_#21262d;border-radius:16px;padding:32px><div style=color:#8b949e;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px>Enterprise</div><div style=font-size:42px;font-weight:700;color:#fff;margin-bottom:4px>$99<span style=font-size:15px;color:#8b949e;font-weight:400>/mo</span></div><div style=color:#8b949e;font-size:13px;margin-bottom:24px>For large engineering orgs</div><div style=color:#c9d1d9;font-size:14px;line-height:2>Unlimited repos<br>Blast radius detection<br>Risk scoring<br>PR comments<br>Unlimited PRs<br>Slack and email alerts<br>Custom integrations<br>Dedicated support</div></div></div></body></html>";return res.status(200).send(h);}
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(`<!DOCTYPE html><html><head><style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Mono&display=swap');
+  :root {
+    --bg: #030014;
+    --glass: rgba(255, 255, 255, 0.02);
+    --border: rgba(255, 255, 255, 0.08);
+    --neon-p: #7000ff;
+    --neon-b: #00d1ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+  .glow-mesh {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% -20%, #1a0033 0%, transparent 60%),
+                radial-gradient(circle at 0% 100%, #001a33 0%, transparent 40%);
+    z-index: -1;
+  }
+  .glass {
+    background: var(--glass); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 24px;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .glass:hover {
+    border-color: var(--neon-p); transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(112, 0, 255, 0.15);
+  }
+  .neon-txt {
+    background: linear-gradient(135deg, #fff 40%, var(--neon-b));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+    .container { max-width: 1100px; margin: 120px auto; display: flex; gap: 30px; justify-content: center; align-items: center; }
+    .card-p { width: 320px; padding: 60px 30px; text-align: center; }
+    .featured { border-color: var(--neon-p); background: rgba(112, 0, 255, 0.05); transform: scale(1.1); }
+    .price { font-size: 50px; font-weight: 800; margin: 20px 0; }
+  </style></head><body><div class="glow-mesh"></div><div class="container"><div class="glass card-p"><h4>CITIZEN</h4><div class="price">$0</div><p style="color:#444; font-size:12px;">Solo Nodes</p></div><div class="glass card-p featured"><h4 style="color:var(--neon-p);">SYNDICATE</h4><div class="price">$29</div><p style="color:#a78bfa; font-size:12px;">Team Clusters</p></div><div class="glass card-p"><h4>CORP</h4><div class="price">$99</div><p style="color:#444; font-size:12px;">Global Grids</p></div></div></body></html>`);
+}
