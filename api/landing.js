@@ -1,70 +1,73 @@
 export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; }
-    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; scroll-behavior: smooth; }
     .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .aurora { position: fixed; inset: 0; filter: blur(100px); z-index: -1; opacity: 0.5; }
-    .orb { position: absolute; border-radius: 50%; animation: float 20s infinite alternate; }
-    .orb-p { width: 600px; height: 600px; background: radial-gradient(circle, #7c3aed33, transparent 70%); top: -200px; left: -100px; }
-    .orb-c { width: 500px; height: 500px; background: radial-gradient(circle, #06b6d422, transparent 70%); bottom: -100px; right: -100px; }
-    @keyframes float { from { transform: translate(0,0); } to { transform: translate(100px, 50px); } }
-    .neon-border { border: 1px solid transparent; background-image: linear-gradient(#020617, #020617), linear-gradient(135deg, #7c3aed, #06b6d4); background-origin: border-box; background-clip: padding-box, border-box; }
     .grad-txt { background: linear-gradient(135deg, #fff 40%, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .brain-pulse { animation: brain-glow 4s infinite alternate; }
-    @keyframes brain-glow { from { filter: drop-shadow(0 0 10px #7c3aed33); } to { filter: drop-shadow(0 0 40px #7c3aed88); } }
+    .node-pulse { animation: node-glow 3s infinite alternate; }
+    @keyframes node-glow { from { filter: drop-shadow(0 0 2px #7c3aed33); } to { filter: drop-shadow(0 0 15px #7c3aed88); } }
+    .counter { font-variant-numeric: tabular-nums; }
   </style>
 </head><body>
-  <div class="aurora"><div class="orb orb-p"></div><div class="orb orb-c"></div></div>
   <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-12 py-5 flex justify-between items-center">
     <div class="text-2xl font-extrabold flex items-center gap-2"><span class="text-cyan-400">⚡</span> ACIE</div>
     <div class="flex gap-10 text-sm font-semibold text-slate-400">
       <a href="/dashboard" class="hover:text-white transition-colors">Platform</a>
-      <a href="/copilot" class="hover:text-white transition-colors">AI Copilot</a>
+      <a href="/executive" class="hover:text-white transition-colors">Executive</a>
       <a href="/pricing" class="hover:text-white transition-colors">Pricing</a>
-      <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="bg-white text-black px-6 py-2 rounded-full hover:scale-105 transition-transform">Get Started</a>
+      <a href="/dashboard" class="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-500 transition-all">Launch Console</a>
     </div>
   </nav>
 
-  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
-    <div class="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-4 py-2 rounded-full text-xs font-bold tracking-widest mb-8">
-      <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span> SYSTEM LEVEL: TITAN ACTIVE
-    </div>
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
     <h1 class="text-7xl md:text-9xl font-extrabold tracking-tighter mb-8 leading-[0.85]">Build. Secure.<br><span class="grad-txt">Automate. Scale.</span></h1>
-    <p class="text-slate-400 text-xl max-w-2xl mb-12">The AI-Powered DevSecOps Intelligence Platform. <br>The All-in-One <span class="text-white font-bold">Google Maps for codebases.</span></p>
-    <div class="flex gap-4">
-      <button class="px-10 py-5 bg-white text-black rounded-2xl font-bold text-lg hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all">Start Free</button>
-      <button class="px-10 py-5 glass rounded-2xl font-bold text-lg">Book Demo</button>
-    </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-12 mt-32 w-full max-w-5xl">
-       <div><div class="text-4xl font-bold text-white">250+</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Repositories</div></div>
-       <div><div class="text-4xl font-bold text-cyan-400">98%</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Security Score</div></div>
-       <div><div class="text-4xl font-bold text-purple-400">96%</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Code Quality</div></div>
-       <div><div class="text-4xl font-bold text-emerald-400">125+</div><div class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">AI Predictions</div></div>
+    <p class="text-slate-400 text-xl max-w-2xl mb-12 italic">"The Google Maps for your codebase."</p>
+    
+    <div class="grid grid-cols-3 gap-12 mt-10 w-full max-w-4xl border-t border-white/5 pt-12">
+       <div><div class="text-3xl font-bold text-white counter">500,000+</div><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Repositories Mapped</div></div>
+       <div><div class="text-3xl font-bold text-cyan-400 counter">12M+</div><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">PRs Analyzed</div></div>
+       <div><div class="text-3xl font-bold text-indigo-400 counter">850K+</div><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Threats Blocked</div></div>
     </div>
   </section>
 
-  <section class="py-32 px-12">
-    <h2 class="text-5xl font-extrabold text-center mb-20 tracking-tighter">Powered by <span class="text-cyan-400">Intelligence.</span></h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-       <div class="glass p-10 hover:border-indigo-500/50 transition-all group">
-         <div class="text-4xl mb-6">🧠</div>
-         <h3 class="text-2xl font-bold mb-4">AI Code Review</h3>
-         <p class="text-slate-500">Automated structural and logic analysis for every single pull request.</p>
-       </div>
-       <div class="glass p-10 hover:border-cyan-500/50 transition-all">
-         <div class="text-4xl mb-6">🛡️</div>
-         <h3 class="text-2xl font-bold mb-4">Security Scanning</h3>
-         <p class="text-slate-500">Instant detection of hardcoded secrets and leaked API keys.</p>
-       </div>
-       <div class="glass p-10 hover:border-emerald-500/50 transition-all">
-         <div class="text-4xl mb-6">⚡</div>
-         <h3 class="text-2xl font-bold mb-4">PR Intelligence</h3>
-         <p class="text-slate-500">Predictive impact analysis and blast radius mapping across modules.</p>
-       </div>
+  <!-- ARCHITECTURE MAP SECTION -->
+  <section class="py-32 px-12 bg-slate-950/30">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <div>
+        <h2 class="text-5xl font-extrabold mb-8 tracking-tight">See Your Codebase<br><span class="text-indigo-500">Like Never Before</span></h2>
+        <p class="text-slate-400 text-lg mb-10">ACIE generates a live, interactive neural map of your entire architecture. Detect service bottlenecks, calculate blast radius, and identify security hotspots in 3D space.</p>
+        <ul class="space-y-4">
+          <li class="flex items-center gap-3 text-slate-300 font-medium"><i data-lucide="share-2" class="text-cyan-400 w-5 h-5"></i> Real-time Service Dependency Graph</li>
+          <li class="flex items-center gap-3 text-slate-300 font-medium"><i data-lucide="zap" class="text-indigo-400 w-5 h-5"></i> Visual Blast Radius Simulation</li>
+          <li class="flex items-center gap-3 text-slate-300 font-medium"><i data-lucide="shield-alert" class="text-rose-400 w-5 h-5"></i> Security Hotspot Heatmapping</li>
+        </ul>
+      </div>
+      <div class="glass p-4 rounded-3xl h-[500px] relative overflow-hidden group">
+         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+         <!-- SIMULATED GRAPH NODES -->
+         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div class="w-16 h-16 bg-indigo-600/20 border-2 border-indigo-500 rounded-full flex items-center justify-center node-pulse relative z-10">
+               <i data-lucide="box" class="text-white"></i>
+            </div>
+            <div class="absolute top-[-100px] left-[-120px] w-12 h-12 glass border-cyan-500/50 rounded-full flex items-center justify-center animate-bounce"><i data-lucide="database" class="w-4 h-4 text-cyan-400"></i></div>
+            <div class="absolute top-[80px] left-[150px] w-12 h-12 glass border-rose-500/50 rounded-full flex items-center justify-center animate-pulse"><i data-lucide="shield" class="w-4 h-4 text-rose-400"></i></div>
+            <svg class="absolute inset-0 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 opacity-20">
+               <line x1="300" y1="300" x2="180" y2="200" stroke="#00d1ff" stroke-width="2" />
+               <line x1="300" y1="300" x2="450" y2="380" stroke="#7000ff" stroke-width="2" />
+            </svg>
+         </div>
+         <div class="absolute bottom-6 left-6 text-[10px] font-bold text-slate-500 tracking-tighter bg-black/50 px-3 py-1 rounded">NEURAL_MAP_V2.0</div>
+      </div>
     </div>
   </section>
+
+  <footer class="py-20 text-center border-t border-white/5">
+    <div class="flex justify-center gap-12 opacity-30 grayscale hover:grayscale-0 transition-all mb-10">
+       <span class="font-bold text-xl">GITHUB</span><span class="font-bold text-xl">AWS</span><span class="font-bold text-xl">AZURE</span><span class="font-bold text-xl">DOCKER</span>
+    </div>
+    <p class="text-slate-600 text-sm">Built by Sahil-Hub-Cloud • Enterprise Ready • © 2026 ACIE Inc.</p>
+  </footer>
+  <script>lucide.createIcons();</script>
 </body></html>`);}

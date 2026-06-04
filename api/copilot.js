@@ -1,49 +1,39 @@
 export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; }
-    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; scroll-behavior: smooth; }
     .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .aurora { position: fixed; inset: 0; filter: blur(100px); z-index: -1; opacity: 0.5; }
-    .orb { position: absolute; border-radius: 50%; animation: float 20s infinite alternate; }
-    .orb-p { width: 600px; height: 600px; background: radial-gradient(circle, #7c3aed33, transparent 70%); top: -200px; left: -100px; }
-    .orb-c { width: 500px; height: 500px; background: radial-gradient(circle, #06b6d422, transparent 70%); bottom: -100px; right: -100px; }
-    @keyframes float { from { transform: translate(0,0); } to { transform: translate(100px, 50px); } }
-    .neon-border { border: 1px solid transparent; background-image: linear-gradient(#020617, #020617), linear-gradient(135deg, #7c3aed, #06b6d4); background-origin: border-box; background-clip: padding-box, border-box; }
     .grad-txt { background: linear-gradient(135deg, #fff 40%, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .brain-pulse { animation: brain-glow 4s infinite alternate; }
-    @keyframes brain-glow { from { filter: drop-shadow(0 0 10px #7c3aed33); } to { filter: drop-shadow(0 0 40px #7c3aed88); } }
+    .node-pulse { animation: node-glow 3s infinite alternate; }
+    @keyframes node-glow { from { filter: drop-shadow(0 0 2px #7c3aed33); } to { filter: drop-shadow(0 0 15px #7c3aed88); } }
+    .counter { font-variant-numeric: tabular-nums; }
   </style>
 </head><body>
   <div class="flex h-screen bg-[#010409]">
-    <aside class="w-20 bg-slate-950 border-r border-white/5 flex flex-col items-center py-8 gap-10">
-      <div class="text-xl font-bold text-cyan-400">⚡</div>
-      <a href="/dashboard" class="text-slate-500 hover:text-white"><i data-lucide="layout-grid"></i></a>
-      <a href="/copilot" class="text-white"><i data-lucide="bot"></i></a>
+    <aside class="w-72 bg-slate-950 border-r border-white/5 p-8 flex flex-col">
+       <div class="text-2xl font-extrabold mb-12 text-cyan-400">⚡ ACIE</div>
+       <div class="space-y-4">
+          <div class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Quick Actions</div>
+          <button class="w-full p-4 glass rounded-2xl text-left text-xs font-bold hover:border-indigo-500/50 transition-all flex items-center gap-3"><i data-lucide="file-text" class="w-4 h-4"></i> Explain Repository</button>
+          <button class="w-full p-4 glass rounded-2xl text-left text-xs font-bold hover:border-rose-500/50 transition-all flex items-center gap-3"><i data-lucide="skull" class="w-4 h-4"></i> Find Vulnerabilities</button>
+          <button class="w-full p-4 glass rounded-2xl text-left text-xs font-bold hover:border-cyan-500/50 transition-all flex items-center gap-3"><i data-lucide="code-2" class="w-4 h-4"></i> Generate Fixes</button>
+       </div>
     </aside>
-    <main class="flex-1 flex flex-col">
-      <header class="h-16 border-b border-white/5 flex items-center px-10 justify-between">
-        <h1 class="font-bold text-sm tracking-widest uppercase text-slate-400">Neural Copilot Instance</h1>
-        <div class="flex gap-4">
-           <span class="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full">AI: THINKING</span>
-        </div>
-      </header>
-      <div class="flex-1 p-12 overflow-y-auto space-y-8">
-        <div class="flex gap-4">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold">A</div>
-          <div class="max-w-2xl glass p-6 rounded-2xl text-sm leading-relaxed">
-            Hello Sahil. I have analyzed the <b>ACIE_CORE</b> repository. Architectural health is at 94%. Would you like me to generate a fix for the circular dependency detected in the Auth module?
+    <main class="flex-1 flex flex-col p-10">
+       <div class="flex-1 glass rounded-3xl p-10 flex flex-col">
+          <div class="flex-1 overflow-y-auto space-y-6">
+             <div class="flex gap-4">
+                <div class="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold">A</div>
+                <div class="max-w-xl text-sm text-slate-300">I am your AI Security Engineer. I've finished the deep-scan of <b>ACIE_PROD</b>. There are 2 potential secret leaks in <i>config.js</i>. Should I redact them?</div>
+             </div>
           </div>
-        </div>
-      </div>
-      <div class="p-10">
-        <div class="max-w-4xl mx-auto relative">
-          <input type="text" class="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-sm focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Ask about repository, explain code, or generate a fix...">
-          <button class="absolute right-4 top-4 bg-indigo-500 p-2 rounded-xl hover:scale-110 transition-transform"><i data-lucide="send" class="w-5 h-5"></i></button>
-        </div>
-      </div>
+          <div class="mt-6 flex gap-4">
+             <input class="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm focus:outline-none" placeholder="Message ACIE Copilot...">
+             <button class="px-8 bg-white text-black rounded-2xl font-bold"><i data-lucide="send"></i></button>
+          </div>
+       </div>
     </main>
   </div>
   <script>lucide.createIcons();</script>
