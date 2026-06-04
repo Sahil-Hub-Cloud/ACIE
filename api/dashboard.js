@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0b14;--bg2:#0f1020;--bg3:#141528;--border:rgba(255,255,255,0.07);--purple:#7c3aed;--blue:#3b82f6;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--text:rgba(255,255,255,0.85);--muted:rgba(255,255,255,0.35)}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow:hidden;font-size:13px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:13px}
 
 /* SIDEBAR */
 .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;flex-shrink:0}
@@ -33,7 +33,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* MAIN */
-.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;height:100vh}
 .topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
 .search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:7px 14px;width:260px}
 .search input{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;width:100%}
@@ -148,6 +148,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .action-icon{font-size:14px}
 .action-text{font-size:12px;font-weight:600}
 .action-arrow{margin-left:auto;color:var(--muted);font-size:12px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.stat-card{animation:fadeUp .4s ease both}
+.stat-card:nth-child(1){animation-delay:.05s}
+.stat-card:nth-child(2){animation-delay:.1s}
+.stat-card:nth-child(3){animation-delay:.15s}
+.stat-card:nth-child(4){animation-delay:.2s}
+.panel{animation:fadeUp .5s .2s ease both}
+.pr-row{transition:background .15s}
+.pr-row:hover{background:rgba(255,255,255,0.03);border-radius:8px;padding-left:8px}
+.action-item{transition:all .2s}
+.nav-item{transition:all .15s}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
 </style>
 </head>
 <body>
