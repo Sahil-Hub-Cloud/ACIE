@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const JSONBIN_ID = '6a2125aaf5f4af5e29b6855c';
-const JSONBIN_KEY = process.env.JSONBIN_KEY;
+const JSONBIN_ID = '6a212bb4da38895dfe8514a5';
+const JSONBIN_KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u';
 
 export default async function handler(req, res) {
   let records = [];
