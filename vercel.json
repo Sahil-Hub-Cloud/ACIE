@@ -5,13 +5,17 @@
     { "src": "api/dashboard.js", "use": "@vercel/node" },
     { "src": "api/landing.js", "use": "@vercel/node" },
     { "src": "api/pricing.js", "use": "@vercel/node" },
-    { "src": "api/copilot.js", "use": "@vercel/node" }
+    { "src": "api/copilot.js", "use": "@vercel/node" },
+    { "src": "api/history.js", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/api/github", "dest": "/api/github.js" },
     { "src": "/dashboard", "dest": "/api/dashboard.js" },
+    { "src": "/command-center", "dest": "/api/dashboard.js" },
+    { "src": "/executive", "dest": "/api/dashboard.js" },
     { "src": "/copilot", "dest": "/api/copilot.js" },
     { "src": "/pricing", "dest": "/api/pricing.js" },
+    { "src": "/history", "dest": "/api/history.js" },
     { "src": "/", "dest": "/api/landing.js" }
   ]
 }
