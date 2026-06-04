@@ -1,5 +1,4 @@
-export default async function handler(req, res) {
-  const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><title>ACIE — Marketplace</title>
@@ -9,7 +8,7 @@ export default async function handler(req, res) {
     .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
   </style>
 </head>
-<body class="p-12">
+<body class="p-12 bg-[#010409]">
   <h1 class="text-5xl font-black mb-12 tracking-tighter">AI Intelligence Marketplace</h1>
   <div class="grid grid-cols-3 gap-8">
     <div class="glass p-8 rounded-[40px] hover:border-purple-500/50 transition-all">
@@ -32,7 +31,4 @@ export default async function handler(req, res) {
     </div>
   </div>
 </body>
-</html>`;
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(html);
-}
+</html>

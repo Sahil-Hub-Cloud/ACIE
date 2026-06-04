@@ -1,5 +1,4 @@
-export default async function handler(req, res) {
-  const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><title>ACIE — Outage Prediction</title>
@@ -11,7 +10,7 @@ export default async function handler(req, res) {
     .fill { height: 100%; transition: width 2s; }
   </style>
 </head>
-<body class="p-12 max-w-5xl mx-auto">
+<body class="p-12 max-w-5xl mx-auto bg-[#010409]">
   <h1 class="text-4xl font-black mb-10 tracking-tight">Predictive Outage Engine</h1>
   <div class="grid gap-6">
     <div class="glass p-8 rounded-3xl flex items-center justify-between">
@@ -30,7 +29,4 @@ export default async function handler(req, res) {
     <p class="text-sm">Scaling secondary clusters in <b>us-east-1</b> automatically to prevent downtime.</p>
   </div>
 </body>
-</html>`;
-  res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(html);
-}
+</html>

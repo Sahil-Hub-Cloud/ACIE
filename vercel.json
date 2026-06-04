@@ -4,6 +4,12 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" }
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/copilot", "destination": "/copilot.html" },
+    { "source": "/executive", "destination": "/executive.html" },
+    { "source": "/war-room", "destination": "/war-room.html" },
+    { "source": "/digital-twin", "destination": "/digital-twin.html" },
+    { "source": "/outages", "destination": "/outages.html" },
+    { "source": "/marketplace", "destination": "/marketplace.html" }
   ]
 }
