@@ -6,6 +6,7 @@
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/executive", "destination": "/executive.html" },
     { "source": "/war-room", "destination": "/war-room.html" },
-    { "source": "/copilot", "destination": "/copilot.html" }
+    { "source": "/copilot", "destination": "/copilot.html" },
+    { "source": "/digital-twin", "destination": "/digital-twin.html" }
   ]
 }
