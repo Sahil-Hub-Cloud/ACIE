@@ -1,70 +1,46 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; scroll-behavior: smooth; }
-    .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .grad-txt { background: linear-gradient(135deg, #fff 40%, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .node-pulse { animation: node-glow 3s infinite alternate; }
-    @keyframes node-glow { from { filter: drop-shadow(0 0 2px #7c3aed33); } to { filter: drop-shadow(0 0 15px #7c3aed88); } }
-    .counter { font-variant-numeric: tabular-nums; }
-  </style>
-</head><body>
+export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head>${DEMO_ENGINE}</head><body>
   <div class="flex h-screen overflow-hidden">
-    <aside class="w-72 bg-slate-950 border-r border-white/5 p-8 flex flex-col">
-      <div class="text-2xl font-extrabold mb-12">⚡ ACIE</div>
+    <aside class="w-72 bg-black border-r border-white/5 p-8 flex flex-col">
+      <div class="text-2xl font-black mb-12">⚡ ACIE</div>
       <nav class="space-y-2 flex-1">
-        <a href="/dashboard" class="flex items-center gap-3 px-5 py-3 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold"><i data-lucide="layout-grid" class="w-4 h-4"></i> Dashboard</a>
-        <a href="/command-center" class="flex items-center gap-3 px-5 py-3 text-slate-500 hover:text-white transition-colors"><i data-lucide="cpu" class="w-4 h-4"></i> Command Center</a>
-        <a href="/executive" class="flex items-center gap-3 px-5 py-3 text-slate-500 hover:text-white transition-colors"><i data-lucide="line-chart" class="w-4 h-4"></i> Executive View</a>
-        <a href="/copilot" class="flex items-center gap-3 px-5 py-3 text-slate-500 hover:text-white transition-colors"><i data-lucide="bot" class="w-4 h-4"></i> AI Copilot</a>
+        <a href="/dashboard" class="flex items-center gap-3 px-5 py-3 bg-white/5 text-white rounded-xl font-bold border border-white/10"><i data-lucide="layout-dashboard"></i> Mission Control</a>
+        <a href="/command-center" class="flex items-center gap-3 px-5 py-3 text-slate-500 font-bold"><i data-lucide="cpu"></i> Agent Hub</a>
+        <a href="/executive" class="flex items-center gap-3 px-5 py-3 text-slate-500 font-bold"><i data-lucide="gem"></i> Executive ROI</a>
       </nav>
     </aside>
 
-    <main class="flex-1 overflow-y-auto p-12">
-      <div class="flex justify-between items-end mb-12">
-        <div>
-           <h1 class="text-4xl font-extrabold tracking-tighter">Command Center</h1>
-           <p class="text-slate-500 text-sm mt-1">Multi-agent AI Intelligence Layer</p>
-        </div>
+    <main class="flex-1 overflow-y-auto p-12 relative">
+      <header class="flex justify-between items-center mb-12">
+        <h1 class="text-4xl font-black tracking-tight">Mission Control</h1>
         <div class="flex gap-4">
-           <div class="glass px-4 py-2 rounded-xl text-xs font-bold text-emerald-400"><i data-lucide="check-circle" class="w-3 h-3 inline mr-1"></i> AGENTS ONLINE</div>
+           <div class="glass px-4 py-2 rounded-xl text-[10px] font-bold text-cyan-400 tracking-widest">LIVE DATA STREAM</div>
         </div>
+      </header>
+
+      <div class="grid grid-cols-4 gap-6 mb-12">
+        <div class="glass p-8 rounded-3xl"><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Money Saved</div><div class="text-3xl font-black text-emerald-400">$142,500</div></div>
+        <div class="glass p-8 rounded-3xl"><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Dev Hours Saved</div><div class="text-3xl font-black">2,480 hrs</div></div>
+        <div class="glass p-8 rounded-3xl"><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Deploy Velocity</div><div class="text-3xl font-black text-cyan-400">+24%</div></div>
+        <div class="glass p-8 rounded-3xl"><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Risks Blocked</div><div class="text-3xl font-black text-rose-500">42</div></div>
       </div>
 
       <div class="grid grid-cols-3 gap-6">
-        <!-- AGENT 1 -->
-        <div class="glass p-8 rounded-3xl border-t-2 border-emerald-500/30">
-          <div class="flex justify-between mb-6">
-            <div class="p-3 bg-emerald-500/10 rounded-2xl"><i data-lucide="shield-check" class="text-emerald-400"></i></div>
-            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded h-fit">ONLINE</span>
-          </div>
-          <h3 class="font-bold text-lg">AI Security Engineer</h3>
-          <p class="text-slate-500 text-sm mt-2 mb-6">Actively monitoring PR #112. No leaked secrets detected in the last 200 commits.</p>
-          <button class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">VIEW AUDIT LOG</button>
+        <div class="col-span-2 glass p-10 rounded-3xl h-[400px]">
+           <h3 class="font-bold text-lg mb-8 flex justify-between">Threat Explorer <span class="text-xs text-rose-400 tracking-widest">REAL-TIME</span></h3>
+           <div class="flex gap-10">
+              <div class="w-48 h-48 rounded-full border-[15px] border-white/5 border-t-rose-500 border-r-orange-500 relative flex items-center justify-center">
+                 <div class="text-center"><div class="text-3xl font-black text-rose-500">12</div><div class="text-[8px] font-bold text-slate-500 uppercase">Alerts</div></div>
+              </div>
+              <div class="space-y-4 flex-1">
+                 <div class="p-4 bg-white/5 border border-white/5 rounded-2xl flex justify-between"><div><span class="text-rose-500 font-bold">CRITICAL</span><br><span class="text-xs text-slate-400">Hardcoded AWS Secret</span></div><span class="text-[10px] font-bold text-slate-600">/auth/login.js</span></div>
+                 <div class="p-4 bg-white/5 border border-white/5 rounded-2xl flex justify-between"><div><span class="text-orange-500 font-bold">HIGH</span><br><span class="text-xs text-slate-400">Circular Dependency</span></div><span class="text-[10px] font-bold text-slate-600">/utils/core.js</span></div>
+              </div>
+           </div>
         </div>
-        
-        <!-- AGENT 2 -->
-        <div class="glass p-8 rounded-3xl border-t-2 border-indigo-500/30">
-          <div class="flex justify-between mb-6">
-            <div class="p-3 bg-indigo-500/10 rounded-2xl"><i data-lucide="terminal" class="text-indigo-400"></i></div>
-            <span class="text-[10px] font-bold text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded h-fit">ONLINE</span>
-          </div>
-          <h3 class="font-bold text-lg">AI DevOps Engineer</h3>
-          <p class="text-slate-500 text-sm mt-2 mb-6">Optimization found: Github Actions caching could save 4m per build. Apply fix?</p>
-          <button class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-bold transition-all">GENERATE FIX PR</button>
-        </div>
-
-        <!-- AGENT 3 -->
-        <div class="glass p-8 rounded-3xl border-t-2 border-gold-500/30">
-          <div class="flex justify-between mb-6">
-            <div class="p-3 bg-orange-500/10 rounded-2xl"><i data-lucide="briefcase" class="text-orange-400"></i></div>
-            <span class="text-[10px] font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded h-fit">ONLINE</span>
-          </div>
-          <h3 class="font-bold text-lg">AI CTO Advisor</h3>
-          <p class="text-slate-500 text-sm mt-2 mb-6">Current Architecture Complexity is 12% above benchmark. Recommend refactor of /auth.</p>
-          <button class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition-all">GET ARCHITECTURE MAP</button>
+        <div class="glass p-10 rounded-3xl text-center">
+           <h3 class="font-bold text-lg mb-10">Reliability Index</h3>
+           <div class="text-8xl font-black grad-txt">94%</div>
+           <div class="mt-4 text-[10px] font-bold text-slate-500 tracking-widest">SYSTEM INTEGRITY NOMINAL</div>
         </div>
       </div>
     </main>
