@@ -1,6 +1,8 @@
-export default async function handler(req, res) {
+import fs from 'fs';
+
+const code = `export default async function handler(req, res) {
   res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(`<!DOCTYPE html><html><head>
+  return res.status(200).send(\`<!DOCTYPE html><html><head>
   <meta charset="UTF-8"><title>ACIE Copilot</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -31,5 +33,8 @@ export default async function handler(req, res) {
     </div>
   </main>
   <script>lucide.createIcons();</script>
-</body></html>`);
-}
+</body></html>\`);
+}`;
+
+fs.writeFileSync('api/copilot.js', code);
+console.log('✅ ELITE_COPILOT_RESTORED');
