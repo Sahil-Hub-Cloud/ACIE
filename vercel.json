@@ -1,21 +1,13 @@
 {
   "version": 2,
   "routes": [
-    {
-      "src": "/dashboard",
-      "dest": "/api/dashboard.js"
-    },
-    {
-      "src": "/copilot",
-      "dest": "/api/copilot.js"
-    },
-    {
-      "src": "/executive",
-      "dest": "/api/executive.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/landing.js"
-    }
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/dashboard", "dest": "/api/dashboard.js" },
+    { "src": "/history", "dest": "/api/history.js" },
+    { "src": "/pricing", "dest": "/api/pricing.js" },
+    { "src": "/copilot", "dest": "/api/copilot.js" },
+    { "src": "/executive", "dest": "/api/executive.js" },
+    { "src": "/war-room", "dest": "/api/war-room.js" },
+    { "src": "/(.*)", "dest": "/api/landing.js" }
   ]
 }
