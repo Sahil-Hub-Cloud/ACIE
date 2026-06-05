@@ -1,7 +1,37 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"><script src="https://unpkg.com/lucide@latest"></script><style>body{background:#010409;color:#f8fafc;font-family:'Inter',sans-serif;overflow-x:hidden}.glass{background:rgba(255,255,255,0.02);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.08);border-radius:20px}.grad-txt{background:linear-gradient(135deg,#fff 40%,#00d1ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.pulse-green{width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;box-shadow:0 0 10px #10b981;animation:p 2s infinite}@keyframes p{0%,100%{opacity:1}50%{opacity:0.5}}</style>
-<script>function startScan(){document.getElementById('overlay').classList.remove('hidden');const steps=["Connecting...","Mapping Nodes...","Analyzing PR #24...","Generating Report..."];let i=0;const itv=setInterval(()=>{if(i<steps.length){document.getElementById('log').innerHTML+='<div class="text-cyan-400 mt-2">> '+steps[i]+'</div>';i++}else{clearInterval(itv);setTimeout(()=>window.location.href='/dashboard',800)}},700)}</script></head>
-<body class="flex flex-col items-center justify-center min-h-screen text-center px-6"><div id="overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden"><div class="w-80 font-mono text-sm text-left"><div class="text-gray-600 font-bold mb-4 uppercase tracking-widest">System_Scan_Active</div><div id="log"></div></div></div>
-<nav class="fixed top-0 w-full px-12 py-6 flex justify-between items-center border-b border-white/5 backdrop-blur-xl z-50"><div class="text-2xl font-black">⚡ ACIE</div><div class="flex gap-8 text-xs font-bold text-gray-500 items-center"><span><span class="pulse-green"></span> SYSTEM LIVE</span><a href="/dashboard" class="text-white">DASHBOARD</a><button onclick="startScan()" class="bg-indigo-600 text-white px-6 py-2 rounded-full">LAUNCH_CONSOLE</button></div></nav>
-<h1 class="text-7xl md:text-9xl font-black tracking-tighter mb-8 leading-[0.85]">Build. Secure.<br><span class="grad-txt">Automate. Scale.</span></h1><p class="text-gray-400 text-xl max-w-2xl mb-12 italic">"The All-in-One Google Maps for codebases."</p>
-<button onclick="startScan()" class="px-12 py-6 bg-white text-black rounded-3xl font-black text-xl hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all">Scan Repository →</button>
+export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { --bg: #020617; --surface: #0b0f1a; --accent: #7c3aed; --cyan: #06b6d4; }
+    body { background-color: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .grad-txt { background: linear-gradient(135deg, #fff 40%, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sidebar-link:hover { background: rgba(124, 58, 237, 0.1); color: #fff; }
+    .sidebar-link.active { background: rgba(124, 58, 237, 0.15); color: #fff; border-right: 2px solid var(--accent); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+  </style>
+</head>
+<body class="flex flex-col items-center">
+  <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-12 py-5 flex justify-between items-center">
+    <div class="text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
+    <div class="flex gap-8 text-xs font-semibold text-slate-400">
+      <a href="/dashboard">Dashboard</a><a href="/executive">ROI</a><a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="bg-white text-black px-5 py-2 rounded-lg">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <div class="mb-6 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase">Intelligence Layer V3.2 Active</div>
+    <h1 class="text-6xl md:text-8xl font-extrabold tracking-tighter mb-6 leading-tight">Predict the Break.<br><span class="grad-txt">Control the Map.</span></h1>
+    <p class="text-slate-400 text-lg max-w-2xl mb-12">"The All-in-One Google Maps for codebases." <br>Architectural impact, security hotspots, and blast radius mapped in real-time.</p>
+    <div class="flex gap-4"><a href="/dashboard" class="px-10 py-4 bg-white text-black rounded-xl font-bold text-sm">Launch Command Center</a></div>
+  </section>
+
+  <section class="py-20 w-full max-w-6xl grid grid-cols-3 gap-6 px-6">
+    <div class="glass p-8 rounded-3xl"><h3>Blast Radius</h3><p class="text-slate-500 text-sm mt-3">Maps downstream impacts across entire module trees instantly.</p></div>
+    <div class="glass p-8 rounded-3xl"><h3>Security Guard</h3><p class="text-slate-500 text-sm mt-3">Active entropy scanning for leaked secrets and vulnerability vectors.</p></div>
+    <div class="glass p-8 rounded-3xl"><h3>AI Remediation</h3><p class="text-slate-500 text-sm mt-3">Automated fix PRs generated for logic failures and circular deps.</p></div>
+  </section>
 </body></html>`);}

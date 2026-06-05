@@ -1,4 +1,6 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+import fs from 'fs';
+
+const THEME = `
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,7 +15,32 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
   </style>
-</head>
+`;
+
+const landing = `export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(\`<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>${THEME}</head>
+<body class="flex flex-col items-center">
+  <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-12 py-5 flex justify-between items-center">
+    <div class="text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
+    <div class="flex gap-8 text-xs font-semibold text-slate-400">
+      <a href="/dashboard">Dashboard</a><a href="/executive">ROI</a><a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="bg-white text-black px-5 py-2 rounded-lg">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <div class="mb-6 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase">Intelligence Layer V3.2 Active</div>
+    <h1 class="text-6xl md:text-8xl font-extrabold tracking-tighter mb-6 leading-tight">Predict the Break.<br><span class="grad-txt">Control the Map.</span></h1>
+    <p class="text-slate-400 text-lg max-w-2xl mb-12">"The All-in-One Google Maps for codebases." <br>Architectural impact, security hotspots, and blast radius mapped in real-time.</p>
+    <div class="flex gap-4"><a href="/dashboard" class="px-10 py-4 bg-white text-black rounded-xl font-bold text-sm">Launch Command Center</a></div>
+  </section>
+
+  <section class="py-20 w-full max-w-6xl grid grid-cols-3 gap-6 px-6">
+    <div class="glass p-8 rounded-3xl"><h3>Blast Radius</h3><p class="text-slate-500 text-sm mt-3">Maps downstream impacts across entire module trees instantly.</p></div>
+    <div class="glass p-8 rounded-3xl"><h3>Security Guard</h3><p class="text-slate-500 text-sm mt-3">Active entropy scanning for leaked secrets and vulnerability vectors.</p></div>
+    <div class="glass p-8 rounded-3xl"><h3>AI Remediation</h3><p class="text-slate-500 text-sm mt-3">Automated fix PRs generated for logic failures and circular deps.</p></div>
+  </section>
+</body></html>\`);}`;
+
+const dashboard = `export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(\`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>${THEME}</head>
 <body class="flex h-screen overflow-hidden">
   <aside class="w-64 bg-[#010409] border-r border-white/5 flex flex-col">
     <div class="p-8 text-xl font-bold">⚡ ACIE</div>
@@ -111,4 +138,8 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     }
     window.onload = refreshData;
   </script>
-</body></html>`);}
+</body></html>\`);}`;
+
+fs.writeFileSync('api/landing.js', landing);
+fs.writeFileSync('api/dashboard.js', dashboard);
+console.log('✅ TITAN-ELITE DESIGN SYSTEM APPLIED');
