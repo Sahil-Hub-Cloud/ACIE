@@ -66,7 +66,7 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
         
         const secRing = document.getElementById('sec-ring');
         if (secRing) {
-          secRing.setAttribute('stroke-dasharray', `${secScore}, 100`);
+          secRing.setAttribute('stroke-dasharray', secScore + ', 100');
         }
 
         // Cause Confidence
@@ -96,19 +96,17 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
         if(records.length > 0) {
           feedContainer.innerHTML = records.slice(0, 5).map(pr => {
             const deps = pr.dependentFiles && pr.dependentFiles.length > 0 ? '<div class="text-[8px] text-indigo-300 mt-2 uppercase tracking-tighter font-bold bg-indigo-500/10 p-1.5 rounded-md border border-indigo-500/10">Downstream: ' + pr.dependentFiles.join(', ') + '</div>' : '';
-            return \`
-              <div class="glass-inner p-4 border border-white/5 bg-slate-950/20 rounded-xl mb-3 hover:border-white/10 transition-colors">
-                <div class="flex justify-between items-start">
-                  <div>
-                    <div class="text-xs font-bold text-white">PR #\${pr.prNumber} — \${pr.repo}</div>
-                    <div class="text-[10px] text-rose-400 mt-1.5 uppercase font-black bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/10 inline-block">\${pr.severity} RISK</div>
-                  </div>
-                  <div class="text-[10px] font-mono text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5">\${pr.dependencyCount} DEPS</div>
-                </div>
-                \${deps}
-                \${pr.rootCause !== "None Detected" ? \`<div class="mt-3 p-3 bg-rose-500/10 rounded-lg text-[9px] text-rose-300 border border-rose-500/10"><b>CAUSE:</b> \${pr.rootCause}</div>\` : ''}
-              </div>
-            \`;
+            return '<div class="glass-inner p-4 border border-white/5 bg-slate-950/20 rounded-xl mb-3 hover:border-white/10 transition-colors">' +
+              '<div class="flex justify-between items-start">' +
+                '<div>' +
+                  '<div class="text-xs font-bold text-white">PR #' + pr.prNumber + ' — ' + pr.repo + '</div>' +
+                  '<div class="text-[10px] text-rose-400 mt-1.5 uppercase font-black bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/10 inline-block">' + pr.severity + ' RISK</div>' +
+                '</div>' +
+                '<div class="text-[10px] font-mono text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5">' + pr.dependencyCount + ' DEPS</div>' +
+              '</div>' +
+              deps +
+              (pr.rootCause !== "None Detected" ? '<div class="mt-3 p-3 bg-rose-500/10 rounded-lg text-[9px] text-rose-300 border border-rose-500/10"><b>CAUSE:</b> ' + pr.rootCause + '</div>' : '') +
+            '</div>';
           }).join('');
         } else {
           feedContainer.innerHTML = '<p class="text-gray-600 text-xs text-center italic mt-10">Waiting for incoming PRs...</p>';
