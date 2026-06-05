@@ -22,17 +22,17 @@ export default async function handler(req, res) {
         document.getElementById('sec-val').innerText = (latest.securityScore || 100) + "%";
         document.getElementById('qual-val').innerText = (latest.qualityScore || 100) + "%";
         document.getElementById('health-val').innerText = (latest.healthScore || 100) + "%"; document.getElementById('health-val').innerText = latest.severity || 'LOW'; document.getElementById('health-val').className = 'text-4xl font-black ' + (latest.severity === 'CRITICAL' ? 'text-rose-500' : 'text-cyan-400');
-        document.getElementById('issue-val').innerText = latest.issues || 0;
+        document.getElementById('issue-val').innerText = latest.dependencyRisk || 'LOW'; document.getElementById('issue-val').className = 'text-2xl font-black ' + (latest.dependencyRisk === 'CRITICAL' ? 'text-rose-500' : 'text-orange-500');
 
         const feed = document.getElementById('activity-feed');
         if (records.length > 0) {
           feed.innerHTML = records.slice(0, 5).map(pr => {
             const sys = pr.impactedSystems && pr.impactedSystems.length > 0 ? pr.impactedSystems.join(', ') : 'General';
-            const sevColor = pr.severity === 'CRITICAL' ? 'text-rose-500' : pr.severity === 'HIGH' ? 'text-orange-500' : 'text-emerald-400';
             const files = pr.impactedFiles || [];
+            const deps = pr.dependentFiles && pr.dependentFiles.length > 0 ? '<div class="text-[8px] text-indigo-300 mt-1 uppercase tracking-tighter font-bold">Downstream: ' + pr.dependentFiles.join(', ') + '</div>' : '';
             return '<div class="p-4 bg-white/5 rounded-xl border border-white/5 mb-2">' +
                    '<div class="flex justify-between"><span class="text-xs font-bold">PR #' + pr.prNumber + '</span>' +
-                   '<span class="text-[10px] font-black ' + sevColor + '">' + pr.severity + '</span></div>' +
+                   '<span class="text-[10px] font-black text-rose-500">' + (pr.dependencyCount || 0) + ' DEPS</span></div>' + deps +
                    '<div class="text-[10px] text-gray-500 mt-1">Systems: ' + sys + '</div>' +
                    '<div class="text-[9px] text-gray-600 truncate mt-1 italic">' + files.join(', ') + '</div></div>';
           }).join('');
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     <div class="grid grid-cols-4 gap-6 mb-12">
       <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Security</div><div id="sec-val" class="text-4xl font-black text-emerald-400">--</div></div>
       <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Quality</div><div id="qual-val" class="text-4xl font-black text-white">--</div></div>
-      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Issues</div><div id="issue-val" class="text-4xl font-black text-rose-500">--</div></div>
+      <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Dep. Risk</div><div id="issue-val" class="text-4xl font-black text-rose-500">--</div></div>
       <div class="glass p-8 text-center"><div class="text-[10px] font-bold text-gray-500 uppercase mb-2">Health</div><div id="health-val" class="text-4xl font-black text-cyan-400">--</div></div>
     </div>
     <div class="grid grid-cols-2 gap-6">
