@@ -3,145 +3,203 @@ export default async function handler(req, res) {
   return res.status(200).send(`<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>ACIE — Pricing</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'JetBrains Mono',monospace;background:#030303;color:#fff;cursor:none}
-.cursor{position:fixed;width:20px;height:20px;border:1px solid #00f2fe;border-radius:50%;pointer-events:none;z-index:9999;transition:transform .1s}
-.cursor-dot{position:fixed;width:4px;height:4px;background:#00f2fe;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
-.scanline{position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,242,254,0.012) 2px,rgba(0,242,254,0.012) 4px);pointer-events:none;z-index:1}
-nav{position:fixed;top:0;width:100%;z-index:100;padding:0 60px;height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,242,254,0.1);background:rgba(3,3,3,0.8);backdrop-filter:blur(20px)}
-.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;font-weight:700;font-size:18px;letter-spacing:2px}
-.logo-box{width:32px;height:32px;border:1px solid #00f2fe;display:grid;place-items:center;font-size:14px;color:#00f2fe}
-.nav-links{display:flex;gap:40px}
-.nav-links a{color:rgba(255,255,255,0.4);text-decoration:none;font-size:12px;letter-spacing:2px;text-transform:uppercase;transition:color .2s}
-.nav-links a:hover{color:#00f2fe}
-.hero{padding:120px 24px 60px;text-align:center}
-.hero-tag{font-size:11px;letter-spacing:4px;color:#00f2fe;text-transform:uppercase;margin-bottom:16px}
-.hero h1{font-size:clamp(36px,6vw,64px);font-weight:700;letter-spacing:-2px;margin-bottom:12px}
-.hero p{font-size:13px;color:rgba(255,255,255,0.3);letter-spacing:2px}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(0,242,254,0.05);max-width:960px;margin:60px auto;border:1px solid rgba(0,242,254,0.1)}
-.plan{background:#030303;padding:40px 32px;position:relative;transition:background .2s}
-.plan:hover{background:rgba(0,242,254,0.02)}
-.plan.featured{background:#040810;border:1px solid rgba(0,242,254,0.2)}
-.pop-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:#00f2fe;color:#030303;font-size:9px;font-weight:700;padding:4px 16px;letter-spacing:2px;white-space:nowrap}
-.plan-name{font-size:9px;letter-spacing:3px;color:rgba(0,242,254,0.5);text-transform:uppercase;margin-bottom:16px}
-.plan-price{font-size:52px;font-weight:700;letter-spacing:-3px;color:#fff;margin-bottom:4px}
-.plan-price sup{font-size:20px;vertical-align:top;margin-top:12px;display:inline-block;color:rgba(0,242,254,0.6)}
-.plan-price span{font-size:14px;color:rgba(255,255,255,0.25);font-weight:400;letter-spacing:0}
-.plan-desc{font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid rgba(0,242,254,0.08);letter-spacing:1px;line-height:1.8}
-.plan-features{list-style:none;margin-bottom:32px}
-.plan-features li{font-size:11px;padding:8px 0;border-bottom:1px solid rgba(0,242,254,0.04);display:flex;align-items:center;gap:8px;letter-spacing:1px;color:rgba(255,255,255,0.6)}
-.plan-features li::before{content:'▸';color:#00f2fe;font-size:10px}
-.plan-features li.no::before{content:'✕';color:rgba(255,255,255,0.15)}
-.plan-features li.no{color:rgba(255,255,255,0.15)}
-.btn-plan{display:block;text-align:center;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;text-decoration:none;transition:all .2s;border:1px solid rgba(0,242,254,0.3);color:#00f2fe;background:transparent}
-.btn-plan:hover{background:rgba(0,242,254,0.05);border-color:#00f2fe}
-.btn-plan.primary{background:rgba(0,242,254,0.08);border-color:#00f2fe}
-.faq{max-width:640px;margin:0 auto 80px;padding:0 24px}
-.faq h2{font-size:14px;letter-spacing:4px;color:#00f2fe;text-align:center;margin-bottom:32px;text-transform:uppercase}
-.faq-item{border-bottom:1px solid rgba(0,242,254,0.08);padding:20px 0}
-.faq-item h3{font-size:12px;font-weight:600;color:#fff;margin-bottom:8px;letter-spacing:1px}
-.faq-item p{font-size:11px;color:rgba(255,255,255,0.35);line-height:2;letter-spacing:1px}
-footer{border-top:1px solid rgba(0,242,254,0.08);padding:24px 60px;display:flex;justify-content:space-between;align-items:center;font-size:11px}
-.footer-logo{color:#00f2fe;letter-spacing:3px}
-.footer-links a{color:rgba(255,255,255,0.2);text-decoration:none;letter-spacing:2px;font-size:10px;margin-left:28px;transition:color .2s}
-.footer-links a:hover{color:#00f2fe}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ACIE — Pricing & Licensing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { --bg: #020617; --surface: #0b0f1a; --accent: #7c3aed; --cyan: #06b6d4; }
+    body { background-color: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #f8fafc; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glass { background: rgba(11, 15, 26, 0.35); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
+    .glass-inner { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); }
+    .sidebar-link:hover { background: rgba(124, 58, 237, 0.1); color: #fff; }
+    .sidebar-link.active { background: rgba(124, 58, 237, 0.15); color: #fff; border-right: 2px solid var(--accent); }
+    
+    .dashboard-card {
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dashboard-card:hover {
+      transform: translateY(-4px) scale(1.005);
+      border-color: rgba(124, 58, 237, 0.25);
+      box-shadow: 0 16px 40px -10px rgba(124, 58, 237, 0.2);
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+  </style>
 </head>
-<body>
-<div class="cursor" id="cursor"></div>
-<div class="cursor-dot" id="cursorDot"></div>
-<div class="scanline"></div>
-<nav>
-  <a href="/" class="logo"><div class="logo-box">A</div>ACIE</a>
-  <div class="nav-links">
-    <a href="/dashboard">Dashboard</a>
-    <a href="/history">History</a>
-    <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
-  </div>
-</nav>
-<div class="hero">
-  <div class="hero-tag">// PRICING_MATRIX</div>
-  <h1>Simple <span style="background:linear-gradient(90deg,#00f2fe,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent">pricing</span></h1>
-  <p>START_FREE · UPGRADE_WHEN_READY · NO_CONTRACTS</p>
-</div>
-<div class="plans">
-  <div class="plan">
-    <div class="plan-name">// FREE_TIER</div>
-    <div class="plan-price"><sup>$</sup>0<span>/mo</span></div>
-    <div class="plan-desc">Perfect for solo developers trying ACIE.</div>
-    <ul class="plan-features">
-      <li>1 GitHub repository</li>
-      <li>Blast radius detection</li>
-      <li>Risk scoring</li>
-      <li>PR comments</li>
-      <li>50 PRs per month</li>
-      <li class="no">Slack notifications</li>
-      <li class="no">Email reports</li>
-      <li class="no">Priority support</li>
-    </ul>
-    <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="btn-plan">[ GET_STARTED ]</a>
-  </div>
-  <div class="plan featured">
-    <div class="pop-badge">MOST_POPULAR</div>
-    <div class="plan-name">// PRO_TIER</div>
-    <div class="plan-price"><sup>$</sup>29<span>/mo</span></div>
-    <div class="plan-desc">For teams that ship code every day.</div>
-    <ul class="plan-features">
-      <li>10 GitHub repositories</li>
-      <li>Blast radius detection</li>
-      <li>Risk scoring</li>
-      <li>PR comments</li>
-      <li>Unlimited PRs</li>
-      <li>Slack notifications</li>
-      <li>Email reports</li>
-      <li>Priority support</li>
-    </ul>
-    <a href="mailto:sahilshaik4679@gmail.com" class="btn-plan primary">[ START_TRIAL ]</a>
-  </div>
-  <div class="plan">
-    <div class="plan-name">// ENTERPRISE_TIER</div>
-    <div class="plan-price"><sup>$</sup>99<span>/mo</span></div>
-    <div class="plan-desc">For large engineering organizations.</div>
-    <ul class="plan-features">
-      <li>Unlimited repositories</li>
-      <li>Blast radius detection</li>
-      <li>Risk scoring</li>
-      <li>PR comments</li>
-      <li>Unlimited PRs</li>
-      <li>Slack and email alerts</li>
-      <li>Custom integrations</li>
-      <li>Dedicated support</li>
-    </ul>
-    <a href="mailto:sahilshaik4679@gmail.com" class="btn-plan">[ CONTACT_US ]</a>
-  </div>
-</div>
-<div class="faq">
-  <h2>// FAQ</h2>
-  <div class="faq-item"><h3>HOW_DOES_ACIE_WORK?</h3><p>ACIE installs as a GitHub App. Every PR triggers a webhook that scans all changed files, maps their imports across the entire codebase, and posts a blast radius report as a PR comment.</p></div>
-  <div class="faq-item"><h3>DO_DEVELOPERS_NEED_TO_CHANGE_ANYTHING?</h3><p>No. ACIE works completely in the background. Developers open PRs exactly as they always have.</p></div>
-  <div class="faq-item"><h3>WHAT_LANGUAGES_ARE_SUPPORTED?</h3><p>Currently JavaScript and TypeScript. Python, Go, and Java support coming soon.</p></div>
-  <div class="faq-item"><h3>CAN_I_CANCEL_ANYTIME?</h3><p>Yes. No contracts, no lock-in. Cancel your plan anytime.</p></div>
-</div>
-<footer>
-  <div class="footer-logo">ACIE_v2</div>
-  <div class="footer-links">
-    <a href="/">Home</a>
-    <a href="/dashboard">Dashboard</a>
-    <a href="https://github.com/Sahil-Hub-Cloud/ACIE">GitHub</a>
-  </div>
-</footer>
-<script>
-const cursor=document.getElementById('cursor');
-const dot=document.getElementById('cursorDot');
-window.addEventListener('mousemove',e=>{cursor.style.left=e.clientX-10+'px';cursor.style.top=e.clientY-10+'px';dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px';});
-window.addEventListener('mousedown',()=>cursor.style.transform='scale(0.7)');
-window.addEventListener('mouseup',()=>cursor.style.transform='scale(1)');
-</script>
+<body class="flex h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-[#010409] border-r border-white/5 flex flex-col h-full shrink-0">
+    <div class="p-8 text-xl font-bold">⚡ ACIE</div>
+    <nav class="flex-1 px-4 space-y-1">
+      <a href="/dashboard" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="layout-grid"></i> Overview</a>
+      <a href="/war-room" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="map"></i> War Room</a>
+      <a href="/history" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="history"></i> Logs</a>
+      <a href="/pricing" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-sm font-medium"><i data-lucide="credit-card"></i> Pricing</a>
+    </nav>
+    <div class="p-6 border-t border-white/5 bg-[#010409]">
+      <div class="glass p-4 rounded-xl text-center relative overflow-hidden group">
+        <div class="text-[10px] font-bold text-slate-500 uppercase mb-1">System Integrity</div>
+        <div id="sys-integrity-val" class="text-lg font-black text-emerald-400 mb-2">0.0%</div>
+        <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+          <div id="sys-integrity-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-[1500ms] ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col h-full overflow-y-auto bg-slate-950">
+    <header class="h-16 border-b border-white/5 flex items-center justify-between px-10 bg-[#010409]/50 shrink-0">
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Plans & Licensing / <span class="text-white">PRICING</span></div>
+      <div class="flex items-center gap-4 text-xs font-bold"><span class="text-emerald-500 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> AGENTS ONLINE</span></div>
+    </header>
+
+    <div class="p-10 space-y-12 max-w-6xl mx-auto w-full">
+      <!-- Hero Header -->
+      <div class="text-center space-y-3">
+        <div class="text-[10px] font-bold text-cyan-400 tracking-[0.3em] uppercase">PRICING_MATRIX</div>
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Simple, transparent <span class="bg-gradient-to-r from-accent to-cyan-400 bg-clip-text text-transparent">pricing</span></h1>
+        <p class="text-xs text-slate-400 font-mono tracking-widest uppercase">Start free · Upgrade when ready · No contracts</p>
+      </div>
+
+      <!-- Pricing Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Free Tier Card -->
+        <div class="glass p-8 rounded-[32px] flex flex-col justify-between border border-white/5 relative overflow-hidden group dashboard-card">
+          <div class="absolute inset-0 bg-gradient-to-tr from-slate-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <div>
+            <div class="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-4">// FREE_TIER</div>
+            <div class="flex items-baseline mb-3">
+              <span class="text-5xl font-black">$0</span>
+              <span class="text-xs text-slate-500 ml-1">/mo</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">Perfect for solo developers trying ACIE.</p>
+            <ul class="space-y-3 mb-8 text-xs text-slate-300">
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> 1 GitHub repository</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Blast radius detection</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Risk scoring</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> PR comments</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> 50 PRs per month</li>
+              <li class="flex items-center gap-2.5 text-white/20"><i data-lucide="x" class="w-4 h-4 text-white/10"></i> Slack notifications</li>
+              <li class="flex items-center gap-2.5 text-white/20"><i data-lucide="x" class="w-4 h-4 text-white/10"></i> Email reports</li>
+              <li class="flex items-center gap-2.5 text-white/20"><i data-lucide="x" class="w-4 h-4 text-white/10"></i> Priority support</li>
+            </ul>
+          </div>
+          <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ GET_STARTED ]</a>
+        </div>
+
+        <!-- Pro Tier Card (Featured) -->
+        <div class="glass p-8 rounded-[32px] flex flex-col justify-between border border-accent/30 bg-accent/5 relative overflow-hidden group dashboard-card">
+          <div class="absolute inset-0 bg-gradient-to-tr from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <div class="absolute top-4 right-4 bg-accent/25 text-white text-[9px] font-bold px-3 py-1 rounded-full border border-accent/30 uppercase tracking-widest">MOST_POPULAR</div>
+          <div>
+            <div class="text-[10px] font-bold text-accent tracking-widest uppercase mb-4">// PRO_TIER</div>
+            <div class="flex items-baseline mb-3">
+              <span class="text-5xl font-black text-white">$29</span>
+              <span class="text-xs text-slate-500 ml-1">/mo</span>
+            </div>
+            <p class="text-xs text-slate-300 mb-6 leading-relaxed">For teams that ship code every day.</p>
+            <ul class="space-y-3 mb-8 text-xs text-slate-200">
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> 10 GitHub repositories</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Blast radius detection</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Risk scoring</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> PR comments</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Unlimited PRs</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Slack notifications</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Email reports</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Priority support</li>
+            </ul>
+          </div>
+          <a href="mailto:sahilshaik4679@gmail.com" class="block text-center py-3.5 px-6 rounded-xl border border-accent bg-accent/25 hover:bg-accent/40 transition-all font-bold text-xs text-white uppercase tracking-wider">[ START_TRIAL ]</a>
+        </div>
+
+        <!-- Enterprise Tier Card -->
+        <div class="glass p-8 rounded-[32px] flex flex-col justify-between border border-white/5 relative overflow-hidden group dashboard-card">
+          <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <div>
+            <div class="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-4">// ENTERPRISE_TIER</div>
+            <div class="flex items-baseline mb-3">
+              <span class="text-5xl font-black">$99</span>
+              <span class="text-xs text-slate-500 ml-1">/mo</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">For large engineering organizations.</p>
+            <ul class="space-y-3 mb-8 text-xs text-slate-300">
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Unlimited repositories</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Blast radius detection</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Risk scoring</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> PR comments</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Unlimited PRs</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Slack and email alerts</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Custom integrations</li>
+              <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Dedicated support</li>
+            </ul>
+          </div>
+          <a href="mailto:sahilshaik4679@gmail.com" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ CONTACT_US ]</a>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="glass p-8 rounded-[32px] border border-white/5 space-y-6">
+        <h2 class="text-xl font-bold tracking-tight mb-8 text-center flex items-center justify-center gap-2"><i data-lucide="help-circle" class="text-accent w-5 h-5"></i> FAQ</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="glass-inner p-6 border border-white/5 bg-slate-950/20 rounded-2xl hover:border-white/10 transition-colors">
+            <h3 class="font-bold text-xs text-cyan-400 mb-2 uppercase tracking-wide">HOW DOES ACIE WORK?</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed">ACIE installs as a GitHub App. Every PR triggers a webhook that scans all changed files, maps their imports across the entire codebase, and posts a blast radius report as a PR comment.</p>
+          </div>
+          <div class="glass-inner p-6 border border-white/5 bg-slate-950/20 rounded-2xl hover:border-white/10 transition-colors">
+            <h3 class="font-bold text-xs text-cyan-400 mb-2 uppercase tracking-wide">DO DEVELOPERS NEED TO CHANGE ANYTHING?</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed">No. ACIE works completely in the background. Developers open PRs exactly as they always have.</p>
+          </div>
+          <div class="glass-inner p-6 border border-white/5 bg-slate-950/20 rounded-2xl hover:border-white/10 transition-colors">
+            <h3 class="font-bold text-xs text-cyan-400 mb-2 uppercase tracking-wide">WHAT LANGUAGES ARE SUPPORTED?</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Currently JavaScript and TypeScript. Python, Go, and Java support coming soon.</p>
+          </div>
+          <div class="glass-inner p-6 border border-white/5 bg-slate-950/20 rounded-2xl hover:border-white/10 transition-colors">
+            <h3 class="font-bold text-xs text-cyan-400 mb-2 uppercase tracking-wide">CAN I CANCEL ANYTIME?</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Yes. No contracts, no lock-in. Cancel your plan anytime.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function animateValue(element, start, end, duration, formatFn) {
+      if(!element) return;
+      const startTime = performance.now();
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = progress * (2 - progress);
+        const current = start + ease * (end - start);
+        element.innerHTML = formatFn ? formatFn(current) : Math.round(current);
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          element.innerHTML = formatFn ? formatFn(end) : end;
+        }
+      }
+      requestAnimationFrame(update);
+    }
+    
+    window.onload = () => {
+      const integrityVal = document.getElementById('sys-integrity-val');
+      if (integrityVal) {
+        animateValue(integrityVal, 0, 98.4, 1500, (v) => v.toFixed(1) + "%");
+      }
+      const integrityBar = document.getElementById('sys-integrity-bar');
+      if (integrityBar) {
+        setTimeout(() => {
+          integrityBar.style.width = '98.4%';
+        }, 100);
+      }
+    };
+    lucide.createIcons();
+  </script>
 </body>
 </html>`);
 }
