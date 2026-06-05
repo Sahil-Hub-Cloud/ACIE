@@ -6,13 +6,13 @@ const JSONBIN_KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/
 
 async function saveRecord(record) {
   try {
-    const res = await axios.get(\`https://api.jsonbin.io/v3/b/\${JSONBIN_ID}/latest\`, {
+    const res = await axios.get(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
       headers: { 'X-Master-Key': JSONBIN_KEY }
     });
     const records = res.data.record.records || [];
     records.unshift(record);
     if (records.length > 100) records.splice(100);
-    await axios.put(\`https://api.jsonbin.io/v3/b/\${JSONBIN_ID}\`, { records }, {
+    await axios.put(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, { records }, {
       headers: { 'X-Master-Key': JSONBIN_KEY, 'Content-Type': 'application/json' }
     });
   } catch (e) {
@@ -40,16 +40,16 @@ export default async function handler(req, res) {
   const prUrl = req.body.pull_request.html_url;
   const token = process.env.GITHUB_TOKEN;
   const headers = {
-    Authorization: \`token \${token}\`,
+    Authorization: `token ${token}`,
     Accept: 'application/vnd.github.v3+json'
   };
 
   try {
     const filesRes = await axios.get(
-      \`https://api.github.com/repos/\${repo}/pulls/\${prNumber}/files\`,
+      `https://api.github.com/repos/${repo}/pulls/${prNumber}/files`,
       { headers }
     );
-    const jsFiles = filesRes.data.filter(f => f.filename.match(/\\.(js|ts|jsx|tsx)$/));
+    const jsFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
 
     if (jsFiles.length === 0) {
       return res.status(200).json({ status: 'no js files changed' });
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     for (const file of jsFiles) {
       try {
         const contentRes = await axios.get(
-          \`https://api.github.com/repos/\${repo}/contents/\${file.filename}?ref=\${headSha}\`,
+          `https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${headSha}`,
           { headers }
         );
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
@@ -72,11 +72,11 @@ export default async function handler(req, res) {
     const changedPaths = new Set(parsedFiles.map(f => f.filePath));
 
     const repoFilesRes = await axios.get(
-      \`https://api.github.com/repos/\${repo}/git/trees/\${headSha}?recursive=1\`,
+      `https://api.github.com/repos/${repo}/git/trees/${headSha}?recursive=1`,
       { headers }
     );
     const allRepoFiles = repoFilesRes.data.tree
-      .filter(f => f.type === 'blob' && f.path.match(/\\.(js|ts|jsx|tsx)$/))
+      .filter(f => f.type === 'blob' && f.path.match(/\.(js|ts|jsx|tsx)$/))
       .map(f => f.path);
 
     const blastRadius = new Set();
@@ -84,15 +84,15 @@ export default async function handler(req, res) {
       if (changedPaths.has(repoFilePath)) continue;
       try {
         const contentRes = await axios.get(
-          \`https://api.github.com/repos/\${repo}/contents/\${repoFilePath}?ref=\${headSha}\`,
+          `https://api.github.com/repos/${repo}/contents/${repoFilePath}?ref=${headSha}`,
           { headers }
         );
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         const parsed = parseFile(repoFilePath, content);
         for (const imp of parsed.imports) {
           for (const changed of changedPaths) {
-            const impClean = imp.from.replace(/^\\.\\.\\//, '').replace(/^\\.\\//, '').replace(/\\.(js|ts|jsx|tsx)$/, '');
-            const changedClean = changed.replace(/\\.(js|ts|jsx|tsx)$/, '');
+            const impClean = imp.from.replace(/^\.\.\//, '').replace(/^\.\//, '').replace(/\.(js|ts|jsx|tsx)$/, '');
+            const changedClean = changed.replace(/\.(js|ts|jsx|tsx)$/, '');
             if (changedClean.endsWith(impClean) || changedClean.includes('/' + impClean) || impClean === changedClean.split('/').pop()) {
               blastRadius.add(repoFilePath);
             }
@@ -110,32 +110,32 @@ export default async function handler(req, res) {
 
     let comment = '## ⚡ ACIE — Change Impact Report\n\n';
     comment += '| Field | Value |\n|-------|-------|\n';
-    comment += \`| Author | @\${prAuthor} |\n\`;
-    comment += \`| Files changed | \${parsedFiles.length} |\n\`;
-    comment += \`| Risk | \${riskIcon} **\${risk}** |\n\n\`;
+    comment += `| Author | @${prAuthor} |\n`;
+    comment += `| Files changed | ${parsedFiles.length} |\n`;
+    comment += `| Risk | ${riskIcon} **${risk}** |\n\n`;
     comment += '### 📁 Files Changed\n';
     comment += '| File | Exports | Imports |\n|------|---------|---------|\n';
-    parsedFiles.forEach(f => { comment += \`| \\`\${f.filePath}\\` | \${f.exports.length} | \${f.imports.length} |\n\`; });
+    parsedFiles.forEach(f => { comment += `| \`${f.filePath}\` | ${f.exports.length} | ${f.imports.length} |\n`; });
     comment += '\n### 💥 Blast Radius\n';
     if (blastRadius.size === 0) {
       comment += '> ✅ No other files affected.\n';
     } else {
-      blastRadius.forEach(f => { comment += \`- \\`\${f}\\`\n\`; });
+      blastRadius.forEach(f => { comment += `- \`${f}\`\n`; });
     }
-    comment += \`\n### \${riskIcon} Risk: **\${risk}**\n\`;
+    comment += `\n### ${riskIcon} Risk: **${risk}**\n`;
     if (risk === 'HIGH') comment += '> ⛔ High risk — review all affected files before merging.\n';
     else if (risk === 'MEDIUM') comment += '> ⚠️ Medium risk — review affected files.\n';
     else comment += '> ✅ Low risk — safe to merge.\n';
     comment += '\n*Powered by [ACIE](https://acie-gamma.vercel.app)*';
 
     await axios.post(
-      \`https://api.github.com/repos/\${repo}/issues/\${prNumber}/comments\`,
+      `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`,
       { body: comment },
       { headers }
     );
 
     await saveRecord({
-      id: \`\${repo}-\${prNumber}\`,
+      id: `${repo}-${prNumber}`,
       repo,
       prNumber,
       prTitle,
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
       const slackWebhook = process.env.SLACK_WEBHOOK_URL;
       if (slackWebhook) {
         await axios.post(slackWebhook, {
-          text: \`\${riskIcon} *ACIE* — PR #\${prNumber} in *\${repo}*\nRisk: \${risk} · \${affectedCount} files affected\n\${prUrl}\`
+          text: `${riskIcon} *ACIE* — PR #${prNumber} in *${repo}*\nRisk: ${risk} · ${affectedCount} files affected\n${prUrl}`
         });
       }
     } catch (e) {}
