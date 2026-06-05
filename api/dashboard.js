@@ -12,19 +12,27 @@ export default async function handler(req, res) {
   </style>
   <script>
     async function refreshData() {
-      const r = await fetch("https://api.jsonbin.io/v3/b/6a212bb4da38895dfe8514a5/latest", { headers: { "X-Master-Key": "$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u" } });
-      const d = await r.json();
-      const latest = d.record.records[0] || { securityScore: 100, qualityScore: 100, healthScore: 100, issues: 0 };
-      
-      document.getElementById('sec-val').innerText = latest.securityScore + "%";
-      document.getElementById('qual-val').innerText = latest.qualityScore + "%";
-      document.getElementById('health-val').innerText = latest.healthScore + "%";
-      document.getElementById('issue-val').innerText = latest.issues;
+      try {
+        const r = await fetch("https://api.jsonbin.io/v3/b/6a212bb4da38895dfe8514a5/latest", { headers: { "X-Master-Key": "$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u" } });
+        const d = await r.json();
+        const records = d.record.records || [];
+        // Safety: If no data, use 100s, else use real data
+        const latest = records[0] || { securityScore: 100, qualityScore: 100, healthScore: 100, issues: 0 };
+        
+        document.getElementById('sec-val').innerText = (latest.securityScore || 100) + "%";
+        document.getElementById('qual-val').innerText = (latest.qualityScore || 100) + "%";
+        document.getElementById('health-val').innerText = (latest.healthScore || 100) + "%";
+        document.getElementById('issue-val').innerText = latest.issues || 0;
 
-      const feed = document.getElementById('activity-feed');
-      feed.innerHTML = d.record.records.slice(0, 3).map(pr => 
-        '<div class="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5"><div><div class="text-sm font-bold">PR #' + pr.prNumber + '</div><div class="text-[10px] text-gray-500">' + pr.repo + '</div></div><div class="text-xs font-black text-emerald-400">' + pr.healthScore + '%</div></div>'
-      ).join('');
+        const feed = document.getElementById('activity-feed');
+        if (records.length > 0) {
+          feed.innerHTML = records.slice(0, 3).map(pr => 
+            '<div class="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5"><div><div class="text-sm font-bold">PR #' + pr.prNumber + '</div><div class="text-[10px] text-gray-500">' + pr.repo + '</div></div><div class="text-xs font-black text-emerald-400">' + (pr.healthScore || 100) + '%</div></div>'
+          ).join('');
+        } else {
+          feed.innerHTML = '<p class="text-gray-600 text-xs text-center italic">Waiting for incoming PRs...</p>';
+        }
+      } catch (e) { console.error("Sync Error:", e); }
     }
     window.onload = refreshData;
   </script>
