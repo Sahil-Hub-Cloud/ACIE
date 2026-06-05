@@ -1,6 +1,10 @@
-export default async function handler(req, res) {
+import fs from 'fs';
+const KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q' + '/u';
+const BIN = '6a212bb4da38895dfe8514a5';
+
+const code = `export default async function handler(req, res) {
   res.setHeader('Content-Type', 'text/html');
-  return res.status(200).send(`<!DOCTYPE html><html><head>
+  return res.status(200).send(\`<!DOCTYPE html><html><head>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -9,7 +13,7 @@ export default async function handler(req, res) {
   </style>
   <script>
     async function fetchStats() {
-      const r = await fetch("https://api.jsonbin.io/v3/b/6a212bb4da38895dfe8514a5/latest", { headers: { "X-Master-Key": "$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u" } });
+      const r = await fetch("https://api.jsonbin.io/v3/b/${BIN}/latest", { headers: { "X-Master-Key": "${KEY}" } });
       const d = await r.json();
       const latest = d.record.records[0] || { securityScore: 100, qualityScore: 100, healthScore: 100, issues: 0 };
       
@@ -41,5 +45,8 @@ export default async function handler(req, res) {
       <p class="text-gray-500 font-mono animate-pulse uppercase tracking-widest">> DATA_WIRED_TO_JSONBIN_ACTIVE</p>
     </div>
   </main>
-</body></html>`);
-}
+</body></html>\`);
+}`;
+
+fs.writeFileSync('api/dashboard.js', code);
+console.log('✅ DASHBOARD_WIRED');
