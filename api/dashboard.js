@@ -21,14 +21,20 @@ export default async function handler(req, res) {
         
         document.getElementById('sec-val').innerText = (latest.securityScore || 100) + "%";
         document.getElementById('qual-val').innerText = (latest.qualityScore || 100) + "%";
-        document.getElementById('health-val').innerText = (latest.healthScore || 100) + "%";
+        document.getElementById('health-val').innerText = (latest.healthScore || 100) + "%"; document.getElementById('health-val').innerText = latest.severity || 'LOW'; document.getElementById('health-val').className = 'text-4xl font-black ' + (latest.severity === 'CRITICAL' ? 'text-rose-500' : 'text-cyan-400');
         document.getElementById('issue-val').innerText = latest.issues || 0;
 
         const feed = document.getElementById('activity-feed');
         if (records.length > 0) {
-          feed.innerHTML = records.slice(0, 3).map(pr => {
-            const impact = pr.blastRadius && pr.blastRadius.length > 0 ? '<div class="text-[9px] text-rose-400 mt-1 italic">Impact: ' + pr.blastRadius.join(', ') + '</div>' : '';
-            return '<div class="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5"><div><div class="text-sm font-bold">PR #' + pr.prNumber + '</div><div class="text-[10px] text-gray-500">' + pr.repo + '</div>' + impact + '</div><div class="text-xs font-black text-emerald-400">' + (pr.healthScore || 100) + '%</div></div>';
+          feed.innerHTML = records.slice(0, 5).map(pr => {
+            const sys = pr.impactedSystems && pr.impactedSystems.length > 0 ? pr.impactedSystems.join(', ') : 'General';
+            const sevColor = pr.severity === 'CRITICAL' ? 'text-rose-500' : pr.severity === 'HIGH' ? 'text-orange-500' : 'text-emerald-400';
+            const files = pr.impactedFiles || [];
+            return '<div class="p-4 bg-white/5 rounded-xl border border-white/5 mb-2">' +
+                   '<div class="flex justify-between"><span class="text-xs font-bold">PR #' + pr.prNumber + '</span>' +
+                   '<span class="text-[10px] font-black ' + sevColor + '">' + pr.severity + '</span></div>' +
+                   '<div class="text-[10px] text-gray-500 mt-1">Systems: ' + sys + '</div>' +
+                   '<div class="text-[9px] text-gray-600 truncate mt-1 italic">' + files.join(', ') + '</div></div>';
           }).join('');
         } else {
           feed.innerHTML = '<p class="text-gray-600 text-xs text-center italic">Waiting for incoming PRs...</p>';
