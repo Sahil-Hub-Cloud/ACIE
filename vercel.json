@@ -2,44 +2,16 @@
   "version": 2,
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
       "src": "/dashboard",
       "dest": "/api/dashboard.js"
     },
     {
-      "src": "/history",
-      "dest": "/api/history.js"
-    },
-    {
-      "src": "/pricing",
-      "dest": "/api/pricing.js"
-    },
-    {
       "src": "/copilot",
-      "dest": "/public/copilot.html"
-    },
-    {
-      "src": "/war-room",
-      "dest": "/public/war-room.html"
-    },
-    {
-      "src": "/digital-twin",
-      "dest": "/public/digital-twin.html"
+      "dest": "/api/copilot.js"
     },
     {
       "src": "/executive",
-      "dest": "/public/executive.html"
-    },
-    {
-      "src": "/marketplace",
-      "dest": "/public/marketplace.html"
-    },
-    {
-      "src": "/outages",
-      "dest": "/public/outages.html"
+      "dest": "/api/executive.js"
     },
     {
       "src": "/(.*)",
