@@ -1,4 +1,8 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+import fs from 'fs';
+const BIN = '6a212bb4da38895dfe8514a5';
+const KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u';
+
+const THEME = `
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,11 +17,13 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
   </style>
+`;
 
+const dashboard = `export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(\`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>${THEME}
   <script>
     async function hydrateTitan() {
       try {
-        const r = await fetch("https://api.jsonbin.io/v3/b/6a212bb4da38895dfe8514a5/latest", { headers: { "X-Master-Key": "$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u" } });
+        const r = await fetch("https://api.jsonbin.io/v3/b/${BIN}/latest", { headers: { "X-Master-Key": "${KEY}" } });
         const d = await r.json();
         const records = d.record.records || [];
         const latest = records[0] || {};
@@ -41,19 +47,19 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
         if(records.length > 0) {
           feedContainer.innerHTML = records.slice(0, 5).map(pr => {
             const deps = pr.dependentFiles && pr.dependentFiles.length > 0 ? '<div class="text-[8px] text-indigo-300 mt-1 uppercase tracking-tighter font-bold">Downstream: ' + pr.dependentFiles.join(', ') + '</div>' : '';
-            return \`
+            return \\\`
               <div class="glass p-4 rounded-xl border border-white/5 mb-2">
                 <div class="flex justify-between items-start">
                   <div>
-                    <div class="text-xs font-bold text-white">PR #\${pr.prNumber} — \${pr.repo}</div>
-                    <div class="text-[10px] text-rose-400 mt-1 uppercase font-black">\${pr.severity} RISK</div>
+                    <div class="text-xs font-bold text-white">PR #\\\${pr.prNumber} — \\\${pr.repo}</div>
+                    <div class="text-[10px] text-rose-400 mt-1 uppercase font-black">\\\${pr.severity} RISK</div>
                   </div>
-                  <div class="text-[10px] font-mono text-slate-500">\${pr.dependencyCount} DEPS</div>
+                  <div class="text-[10px] font-mono text-slate-500">\\\${pr.dependencyCount} DEPS</div>
                 </div>
-                \${deps}
-                \${pr.rootCause !== "None Detected" ? \`<div class="mt-2 p-2 bg-rose-500/10 rounded-lg text-[9px] text-rose-300"><b>CAUSE:</b> \${pr.rootCause}</div>\` : ''}
+                \\\${deps}
+                \\\${pr.rootCause !== "None Detected" ? \\\`<div class="mt-2 p-2 bg-rose-500/10 rounded-lg text-[9px] text-rose-300"><b>CAUSE:</b> \\\${pr.rootCause}</div>\\\` : ''}
               </div>
-            \`;
+            \\\`;
           }).join('');
         } else {
           feedContainer.innerHTML = '<p class="text-gray-600 text-xs text-center italic">Waiting for incoming PRs...</p>';
@@ -116,4 +122,7 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     </div>
   </main>
   <script>lucide.createIcons();</script>
-</body></html>`);}
+</body></html>\`);}`;
+
+fs.writeFileSync('api/dashboard.js', dashboard);
+console.log('✅ DASHBOARD_REWIRED');

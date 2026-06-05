@@ -1,7 +1,11 @@
-import axios from 'axios';
+import fs from 'fs';
+const BIN = '6a212bb4da38895dfe8514a5';
+const KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u';
+
+const code = `import axios from 'axios';
 import { parseFile } from '../src/parser/parser.js';
-const JSONBIN_ID = '6a212bb4da38895dfe8514a5';
-const JSONBIN_KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u';
+const JSONBIN_ID = '${BIN}';
+const JSONBIN_KEY = '${KEY}';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE_ONLINE' });
@@ -16,12 +20,12 @@ export default async function handler(req, res) {
 
   try {
     const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
-    const changedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
+    const changedFiles = filesRes.data.filter(f => f.filename.match(/\\.(js|ts|jsx|tsx)$/));
     
     // 1. DEP PROPAGATION
-    const changedBases = changedFiles.map(f => f.filename.split('/').pop().replace(/\.[jt]sx?$/, ''));
+    const changedBases = changedFiles.map(f => f.filename.split('/').pop().replace(/\\.[jt]sx?$/, ''));
     const treeRes = await axios.get("https://api.github.com/repos/" + repo + "/git/trees/" + headSha + "?recursive=1", { headers });
-    const allFiles = treeRes.data.tree.filter(f => f.path.match(/\.(js|ts|jsx|tsx)$/));
+    const allFiles = treeRes.data.tree.filter(f => f.path.match(/\\.(js|ts|jsx|tsx)$/));
     
     let dependentFiles = new Set();
     let systems = new Set();
@@ -49,8 +53,8 @@ export default async function handler(req, res) {
 
     for (const file of changedFiles) {
       try {
-        const baseRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${baseSha}`, { headers });
-        const headRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${headSha}`, { headers });
+        const baseRes = await axios.get(\`https://api.github.com/repos/\${repo}/contents/\${file.filename}?ref=\${baseSha}\`, { headers });
+        const headRes = await axios.get(\`https://api.github.com/repos/\${repo}/contents/\${file.filename}?ref=\${headSha}\`, { headers });
         
         const baseContent = Buffer.from(baseRes.data.content, 'base64').toString('utf-8');
         const headContent = Buffer.from(headRes.data.content, 'base64').toString('utf-8');
@@ -111,4 +115,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) { return res.status(500).json({ error: err.message }); }
-}
+}`;
+
+fs.writeFileSync('api/github.js', code);
+console.log('✅ ENGINE_REWIRED');
