@@ -1,16 +1,49 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/history", "destination": "/api/history" },
-    { "source": "/copilot", "destination": "/copilot.html" },
-    { "source": "/executive", "destination": "/executive.html" },
-    { "source": "/war-room", "destination": "/war-room.html" },
-    { "source": "/digital-twin", "destination": "/digital-twin.html" },
-    { "source": "/outages", "destination": "/outages.html" },
-    { "source": "/marketplace", "destination": "/marketplace.html" }
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/api/dashboard.js"
+    },
+    {
+      "src": "/history",
+      "dest": "/api/history.js"
+    },
+    {
+      "src": "/pricing",
+      "dest": "/api/pricing.js"
+    },
+    {
+      "src": "/copilot",
+      "dest": "/public/copilot.html"
+    },
+    {
+      "src": "/war-room",
+      "dest": "/public/war-room.html"
+    },
+    {
+      "src": "/digital-twin",
+      "dest": "/public/digital-twin.html"
+    },
+    {
+      "src": "/executive",
+      "dest": "/public/executive.html"
+    },
+    {
+      "src": "/marketplace",
+      "dest": "/public/marketplace.html"
+    },
+    {
+      "src": "/outages",
+      "dest": "/public/outages.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/landing.js"
+    }
   ]
 }
