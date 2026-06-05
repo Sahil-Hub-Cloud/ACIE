@@ -2,15 +2,15 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
-  "routes": [
-    { "src": "/login", "dest": "/api/login.js" },
-    { "src": "/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/copilot", "dest": "/api/copilot.js" },
-    { "src": "/executive", "dest": "/api/executive.js" },
-    { "src": "/war-room", "dest": "/api/war-room.js" },
-    { "src": "/history", "dest": "/api/history.js" },
-    { "src": "/pricing", "dest": "/api/pricing.js" },
-    { "src": "/api/github", "dest": "/api/github.js" },
-    { "src": "/(.*)", "dest": "/api/landing.js" }
+  "rewrites": [
+    { "source": "/login", "destination": "/api/login.js" },
+    { "source": "/dashboard", "destination": "/api/dashboard.js" },
+    { "source": "/copilot", "destination": "/api/copilot.js" },
+    { "source": "/executive", "destination": "/api/executive.js" },
+    { "source": "/war-room", "destination": "/api/war-room.js" },
+    { "source": "/history", "destination": "/api/history.js" },
+    { "source": "/pricing", "destination": "/api/pricing.js" },
+    { "source": "/api/github", "destination": "/api/github.js" },
+    { "source": "/", "destination": "/api/landing.js" }
   ]
 }
