@@ -1,0 +1,114 @@
+[33mffb7df9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m UI FREEZE: ACIE visual system locked
+[33m7cba4f0[m TITAN WAR ROOM PHASE 1
+[33m84d9cad[m TITAN RE-WIRING: Restoring Intelligence Layer to Elite UI
+[33mdaa5f01[m RESTORE: authenticateUser export on main
+[33m1ac687c[m TITAN-ELITE: High-density layout, professional typography, and Information Architecture
+[33m1eabe42[m TEST: Remove authenticateUser export to simulate breaking change
+[33ma66d9ba[m INTELLIGENCE: Implemented Root Cause Analysis and Heuristic Fix Generator
+[33m133bd66[m TEST: Reference auth_service in feature.js for propagation test
+[33m0044a0e[m ARCHITECTURE: Implemented Dependency Propagation Engine and Risk Mapping
+[33mdbbc7d5[m FIX: Precise routing for /api/github
+[33mc34a2aa[m[33m ([m[1;32mtest-intel-classification[m[33m)[m FIX: Correct Vercel routing configuration to support /api/github webhook
+[33m8ca9b09[m[33m ([m[1;31morigin/test-intel-classification[m[33m)[m Add authentication service for testing
+[33m2a8b30e[m INTEGRATION: Added System Classification and Severity Scoring
+[33mfa7abcd[m INTEGRATION: Persisting Blast Radius data and rendering architectural impact in Dashboard
+[33m5eee251[m TITAN COMPLETE: Real ROI Data and War Room restoration
+[33md170c0b[m TITAN OMEGA FIX: Correcting Dashboard IDs and restoring AI Investigation Mode
+[33m6749f54[m TITAN RESTORE: Returning to Peaking UI with Live Data wiring
+[33mf6de68d[m WIRING: Connecting Dashboard to real JSONBin live data
+[33mee18ece[m SYSTEM RESTORE: Returning to Peaking UI from June 4th
+[33md8ec9f4[m Fix dashboard crash - use JSON.stringify approach
+[33m932ca37[m Restore sci-fi dashboard and pricing pages
+[33m5a73d3c[m Restore landing page and vercel.json
+[33m80e816e[m Deploy /history route and serverless function to render PR history
+[33ma2516cf[m[33m ([m[1;31morigin/test-webhook-live[m[33m, [m[1;32mtest-webhook-live[m[33m)[m Fix template literals syntax error in api/github.js
+[33m00a6348[m Live webhook test
+[33m377745e[m STABILIZATION: Cleaned up redundant builders/handlers and standardized on public/ HTML folder
+[33m3aa2ed4[m SHATTER LOOP: Static public deployment v2
+[33me2a63d9[m SYSTEM RESET: Clearing loop and restoring Core UI
+[33m222b363[m FORCE SYNC: Digital Twin and Master Routing
+[33mb4a311b[m TITAN OMEGA: Added Digital Twin Holographic Service Map
+[33mf22d034[m TITAN OMEGA+: Added Global War Room and Neural AI Console
+[33m0222c8e[m TITAN: Activated Live Scan Simulation and Dashboard Gauges
+[33mb624c85[m BREAK THE LOOP: Explicit public routing with clean URLs
+[33mbfbd2f9[m TITAN INTEL: Added Architecture Map, AI Agents Hub, and ROI Metrics
+[33m8666630[m SHATTER THE LOOP: Static root files, no config
+[33m7345dbc[m OMEGA: Delivering the Billion-Dollar UI Infrastructure
+[33m0110889[m SHATTER LOOP: Forcing public static folder and framework override
+[33mffe5010[m BREAK THE LOOP: Root static deployment of OMEGA phase
+[33me4e7705[m OMEGA INFRASTRUCTURE: Moved to Static High-Performance UI in public folder
+[33m9b6ac37[m BREAK LOOP: Force tracking api files and clean routing
+[33m45eee64[m BREAK THE LOOP: Minimalist routing and synchronized Omega modules
+[33mb4e740d[m OMEGA SYNC: Fixing 404 routes for Enterprise Modules
+[33m1af66fa[m TITAN OMEGA: Added Digital Twin, Outage Prediction, and Marketplace Modules
+[33ma79410c[m TITAN ENTERPRISE: Added War Room, Time Machine, and Multi-Repo Command Center
+[33m02f95a7[m DEMO: Added Self-Healing PR simulation and Executive ROI Dashboard
+[33mf26ba62[m DEMO: Added Investigative AI Mode to Copilot
+[33mda999a7[m FIX: Direct injection of Demo Mode to prevent 500 crash
+[33mefc3a6d[m DEMO: Added Scan Simulation, Threat Explorer, and ROI metrics
+[33mf4fdeac[m TITAN-INTEL: Added Architecture Map, Social Proof, and AI Agents
+[33m70f03fd[m Add new dashboard routes (/executive, /command-center) and restore history route to vercel.json
+[33m23aed9a[m TITAN-V3: Fully operational AI DevSecOps Platform
+[33mc236924[m TITAN-V3: World-Class Infrastructure Upgrade
+[33mb286a4e[m TITAN ULTRA: Full scrolling landing page and persistent dashboard sidebar
+[33m0046ef4[m LIVE: Added Terminal Stream, Pulsing Heartbeat, and Animated Health Gauge
+[33mc0f566a[m TITAN-X: Full Implementation of Billion-Dollar Vision
+[33m04e2322[m TITAN: Finalizing Google Maps for codebases branding and high-density UI
+[33m52c5b49[m TITAN-V2: Full High-Density Design System Rebuild
+[33m86f5944[m Linear-Elite Rebuild: High-density data and professional UI
+[33m51661cf[m TITAN: Billion-Dollar UI Infrastructure Rebuild
+[33mdf9dd66[m Applied 2050 Cyberpunk UI
+[33md9d993c[m Fix all crashes - clean rewrite
+[33mb09f5bc[m High contrast readable UI for landing and dashboard
+[33m434fd3d[m Sci-fi holographic dashboard
+[33m7c126c8[m Sci-fi holographic landing page
+[33m2b35dbd[m Hardcode JSONBin key in github.js
+[33m3bb4649[m Fix github.js bin ID on main
+[33ma11e5b3[m Fix history page with correct bin ID and key
+[33mf637819[m PR history saving + history page
+[33m0299404[m Add PR history saving to JSONBin
+[33md8ff5d3[m Fix scrolling and add animations
+[33m32b5eb1[m World-class dashboard inspired by reference
+[33m5c9d0b6[m World-class UI redesign
+[33m1f9f22a[m Premium holographic UI with sidebar dashboard
+[33me55fde6[m Premium Holographic UI with Sidebar and Stats
+[33mfc09e1e[m Revert UI to stable version
+[33mdc16394[m Elite Futuristic 3D UI Upgrade
+[33m2dc77dc[m Elite Dashboard UI with sidebar and activity feed
+[33m6c85825[m Fix: Resolved truncation crash and applied Elite UI
+[33md03e78d[m Premium Elite UI for Landing Page
+[33m9e8c49b[m Glassmorphism UI for landing and dashboard
+[33m2c7d836[m Premium landing page UI
+[33ma9114f0[m Premium futuristic landing page
+[33m4e79ada[m Premium futuristic landing page UI
+[33m76e9239[m 3D holographic Aurora UI with tilt animations
+[33m39c5b7a[m[33m ([m[1;32multimate-test[m[33m)[m Premium UI upgrade with glassmorphism and animations
+[33m8fcc602[m[33m ([m[1;31morigin/ultimate-test[m[33m)[m Ultimate stress test for all ACIE features
+[33mabfb6cc[m Test status check with security risk
+[33m6887b12[m Add GitHub status checks to block high risk PRs
+[33md385c9a[m Recover landing page and add multi-repo install link
+[33mb96d97c[m Test email to new address
+[33m78d73d1[m Update email recipient
+[33m3281d7d[m Add email reports via Resend
+[33mb7d07e2[m[33m ([m[1;32mstyle-test[m[33m)[m Test style auditor with snake_case
+[33m3e64754[m[33m ([m[1;32mlabel-test[m[33m)[m Add style auditor for snake_case detection
+[33m58ce8c9[m[33m ([m[1;31morigin/label-test[m[33m)[m Test auto labeling feature
+[33m8286982[m Add auto-labeling for risk, tests, and security
+[33m0db0446[m Fix dashboard syntax error
+[33m4dbf4f6[m Clean rewrite with health score
+[33m35b4ed2[m Engine update: Added Auto-Labeling for security, style, and complexity
+[33m9a8b792[m Engine update: Added Cyclomatic Complexity analysis and patched parser bug
+[33m5e1c903[m Engine update: Added Style Consistency and naming convention auditing
+[33m38bcf32[m Engine update: Implemented percentage-based Code Health Score
+[33m52137a9[m Engine update: Added Deep Nesting (Arrow Anti-Pattern) detection
+[33mf376609[m Engine update: Added Heart File detection (critical infrastructure protection)
+[33m64782a6[m Engine update: Added Review Effort estimator (Coffee vs Deep Focus)
+[33m0a6d6a1[m Engine update: Added AI-style 'Key Findings' executive summary
+[33m7ab96d5[m Engine update: Added Technical Debt (TODO/FIXME) detection
+[33mc7612b3[m Engine update: Added PR Title Context Awareness (WIP/Urgent logic)
+[33m15905e1[m Engine update: Full Go (.go) language support activated
+[33mee4fb66[m Parser: Added Go (.go) function and type detection
+[33m0881f11[m Fix: Resolved variable crash and Added Auto-Labeling feature
+[33m9344815[m Engine update: Added AI Risk Scoring and Executive Verdicts
+[33m19dcbbd[m Engine update: Added Quality Assurance (test detection) tracker
+

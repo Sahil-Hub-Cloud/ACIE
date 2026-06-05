@@ -1,13 +1,16 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "routes": [
-    { "src": "/api/github", "dest": "/api/github.js" },
+    { "src": "/login", "dest": "/api/login.js" },
     { "src": "/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/history", "dest": "/api/history.js" },
-    { "src": "/pricing", "dest": "/api/pricing.js" },
     { "src": "/copilot", "dest": "/api/copilot.js" },
     { "src": "/executive", "dest": "/api/executive.js" },
     { "src": "/war-room", "dest": "/api/war-room.js" },
+    { "src": "/history", "dest": "/api/history.js" },
+    { "src": "/pricing", "dest": "/api/pricing.js" },
+    { "src": "/api/github", "dest": "/api/github.js" },
     { "src": "/(.*)", "dest": "/api/landing.js" }
   ]
 }
