@@ -23,10 +23,10 @@ const dashboard = `export default async function handler(req,res){res.setHeader(
   <script>
     async function hydrateTitan() {
       try {
-        const r = await fetch("https://api.jsonbin.io/v3/b/${BIN}/latest", { headers: { "X-Master-Key": "${KEY}" } });
+        const r = await fetch("/api/telemetry?view=latest");
         const d = await r.json();
-        const records = d.record.records || [];
-        const latest = records[0] || {};
+        const records = d.records || [];
+        const latest = d.latest || records[0] || {};
 
         // Hydrate Top Stats
         document.getElementById('sec-val').innerText = (latest.securityScore || 100) + "%";

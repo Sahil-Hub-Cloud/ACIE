@@ -17,11 +17,11 @@ const code = `export default async function handler(req, res) {
   <script>
     async function refreshData() {
       try {
-        const r = await fetch("https://api.jsonbin.io/v3/b/${BIN}/latest", { headers: { "X-Master-Key": "${KEY}" } });
+        const r = await fetch("/api/telemetry?view=latest");
         const d = await r.json();
-        const records = d.record.records || [];
+        const records = d.records || [];
         // Safety: If no data, use 100s, else use real data
-        const latest = records[0] || { securityScore: 100, qualityScore: 100, healthScore: 100, issues: 0 };
+        const latest = d.latest || records[0] || { securityScore: 100, qualityScore: 100, healthScore: 100, issues: 0 };
         
         document.getElementById('sec-val').innerText = (latest.securityScore || 100) + "%";
         document.getElementById('qual-val').innerText = (latest.qualityScore || 100) + "%";

@@ -3,14 +3,16 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "routes": [
-    { "src": "/login", "dest": "/api/login.js" },
-    { "src": "/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/copilot", "dest": "/api/copilot.js" },
-    { "src": "/executive", "dest": "/api/executive.js" },
-    { "src": "/war-room", "dest": "/api/war-room.js" },
-    { "src": "/history", "dest": "/api/history.js" },
-    { "src": "/pricing", "dest": "/api/pricing.js" },
-    { "src": "/api/github", "dest": "/api/github.js" },
-    { "src": "/(?!api/)(.*)", "dest": "/api/landing.js" }
+    { "src": "^/login$", "dest": "/api/login.js" },
+    { "src": "^/dashboard$", "dest": "/api/dashboard.js" },
+    { "src": "^/copilot$", "dest": "/api/copilot.js" },
+    { "src": "^/executive$", "dest": "/api/executive.js" },
+    { "src": "^/war-room$", "dest": "/api/war-room.js" },
+    { "src": "^/history$", "dest": "/api/history.js" },
+    { "src": "^/pricing$", "dest": "/api/pricing.js" },
+    { "src": "^/api/github$", "dest": "/api/github.js" },
+    { "src": "^/api/copilot-brain$", "dest": "/api/copilot-brain.js" },
+    { "src": "^/api/(.*)$", "dest": "/api/$1" },
+    { "src": "^/(.*)$", "dest": "/api/landing.js" }
   ]
 }

@@ -13,9 +13,9 @@ const code = `export default async function handler(req, res) {
   </style>
   <script>
     async function loadROI() {
-      const r = await fetch("https://api.jsonbin.io/v3/b/${BIN}/latest", { headers: { "X-Master-Key": "${KEY}" } });
+      const r = await fetch("/api/telemetry?view=summary");
       const d = await r.json();
-      const count = d.record.records.length || 0;
+      const count = d.count || 0;
       
       document.getElementById('money-saved').innerText = "$" + (count * 5000).toLocaleString();
       document.getElementById('hours-saved').innerText = (count * 40).toLocaleString() + " hrs";

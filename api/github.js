@@ -1,12 +1,20 @@
 import axios from 'axios';
 import { parseFile } from '../src/parser/parser.js';
-const JSONBIN_ID = '6a212bb4da38895dfe8514a5';
-const JSONBIN_KEY = '$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u';
+const JSONBIN_ID = process.env.JSONBIN_ID;
+const JSONBIN_KEY = process.env.JSONBIN_KEY;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE_ONLINE' });
   const body = req.body;
   if (!body.pull_request) return res.status(200).json({ status: 'ignored' });
+  if (!JSONBIN_ID || !JSONBIN_KEY) {
+    console.error('JSONBin environment variables are not configured');
+    return res.status(500).json({ error: 'Telemetry storage is not configured' });
+  }
+  if (!process.env.GITHUB_TOKEN) {
+    console.error('GITHUB_TOKEN environment variable is not configured');
+    return res.status(500).json({ error: 'GitHub integration is not configured' });
+  }
 
   const repo = body.repository.full_name;
   const prNumber = body.pull_request.number;

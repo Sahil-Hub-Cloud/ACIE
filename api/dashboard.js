@@ -55,10 +55,10 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
 
     async function hydrateTitan() {
       try {
-        const r = await fetch("https://api.jsonbin.io/v3/b/6a212bb4da38895dfe8514a5/latest", { headers: { "X-Master-Key": "$2a$10$OLH.A4d17J6/.mDf9XtqwuT0jtdNQpLP74RT1aDXXnEUFB6ry0Q/u" } });
+        const r = await fetch("/api/telemetry?view=latest");
         const d = await r.json();
-        const records = d.record.records || [];
-        const latest = records[0] || {};
+        const records = d.records || [];
+        const latest = d.latest || records[0] || {};
 
         // Hydrate Top Stats with animations
         const secScore = latest.securityScore || 100;
