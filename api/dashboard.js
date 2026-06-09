@@ -114,6 +114,15 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
       } catch (e) { console.error("Re-wire failed", e); }
     }
 
+    function openDrawer() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.add('opacity-100', 'pointer-events-auto');
+    }
+    function closeDrawer() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.remove('opacity-100', 'pointer-events-auto');
+    }
+
     window.onload = () => {
       hydrateTitan();
       
@@ -131,15 +140,22 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     };
   </script>
 </head>
-<body class="flex h-screen overflow-hidden">
-  <aside class="w-64 bg-[#010409] border-r border-white/5 flex flex-col">
-    <div class="p-8 text-xl font-bold">⚡ ACIE</div>
+<body class="flex h-screen overflow-hidden bg-slate-950 text-[#f8fafc]">
+  <!-- Sidebar Backdrop Overlay -->
+  <div id="sidebar-overlay" onclick="closeDrawer()" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#010409] border-r border-white/5 flex flex-col h-full transition-transform duration-300 transform -translate-x-full md:translate-x-0 shrink-0">
+    <button onclick="closeDrawer()" class="absolute top-6 right-6 text-slate-500 hover:text-white md:hidden focus:outline-none"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <div class="p-8 text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
     <nav class="flex-1 px-4 space-y-1">
-      <a href="/dashboard" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-sm font-medium"><i data-lucide="layout-grid"></i> Overview</a>
-      <a href="/war-room" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="map"></i> War Room</a>
-      <a href="/history" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="history"></i> Logs</a>
+      <a href="/dashboard" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-white"><i data-lucide="layout-grid"></i> Overview</a>
+      <a href="/copilot" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="bot"></i> AI Copilot</a>
+      <a href="/war-room" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="map"></i> War Room</a>
+      <a href="/history" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="history"></i> Logs</a>
+      <a href="/executive" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="trending-up"></i> ROI</a>
     </nav>
-    <div class="p-6 border-t border-white/5">
+    <div class="p-6 border-t border-white/5 bg-[#010409]">
       <div class="glass p-4 rounded-xl text-center relative overflow-hidden group">
         <div class="text-[10px] font-bold text-slate-500 uppercase mb-1">System Integrity</div>
         <div id="sys-integrity-val" class="text-lg font-black text-emerald-400 mb-2">0.0%</div>
@@ -150,14 +166,25 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col">
-    <header class="h-16 border-b border-white/5 flex items-center justify-between px-10 bg-[#010409]/50">
+  <!-- Main View Container -->
+  <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+    <!-- Mobile Header -->
+    <header class="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#010409]/50 md:hidden shrink-0 w-full">
+      <button onclick="openDrawer()" class="text-white focus:outline-none"><i data-lucide="menu" class="w-6 h-6"></i></button>
+      <div class="text-lg font-bold flex items-center gap-2">⚡ ACIE</div>
+      <div class="w-6"></div>
+    </header>
+
+    <!-- Header Desktop -->
+    <header class="hidden md:flex h-16 border-b border-white/5 items-center justify-between px-10 bg-[#010409]/50 shrink-0">
       <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">ACIE_CORE</span></div>
       <div class="flex items-center gap-4 text-xs font-bold"><span class="text-emerald-500 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> AGENTS ONLINE</span></div>
     </header>
     
-    <div class="flex-1 overflow-y-auto p-10 space-y-8">
-      <div class="grid grid-cols-4 gap-4">
+    <!-- Page Content Scroll Area -->
+    <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
+      <!-- Top Stats Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass p-6 rounded-2xl relative overflow-hidden group dashboard-card">
           <div class="absolute inset-0 bg-gradient-to-tr from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
           <div class="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-wider">Security Score</div>
@@ -205,8 +232,9 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-6">
-        <div class="col-span-2 glass p-8 rounded-[32px] min-h-[400px] flex flex-col relative overflow-hidden dashboard-card">
+      <!-- Bottom Layout Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="col-span-1 lg:col-span-2 glass p-8 rounded-[32px] min-h-[400px] flex flex-col relative overflow-hidden dashboard-card">
           <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="network" class="w-4 h-4 text-accent"></i> Neural Activity Map</h3>
             <span class="text-[9px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">

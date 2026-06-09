@@ -50,41 +50,66 @@ export default async function handler(req, res) {
     }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-  </style>
-</head>
-<body class="flex h-screen overflow-hidden bg-slate-950 text-[#f8fafc]">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-[#010409] border-r border-white/5 flex flex-col h-full shrink-0">
-    <div class="p-8 text-xl font-bold">⚡ ACIE</div>
-    <nav class="flex-1 px-4 space-y-1">
-      <a href="/dashboard" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="layout-grid"></i> Overview</a>
-      <a href="/war-room" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-sm font-medium"><i data-lucide="map"></i> War Room</a>
-      <a href="/history" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-slate-500 hover:text-white"><i data-lucide="history"></i> Logs</a>
-    </nav>
-    <div class="p-6 border-t border-white/5 bg-[#010409]">
-      <div class="glass p-4 rounded-xl text-center relative overflow-hidden group">
-        <div class="text-[10px] font-bold text-slate-500 uppercase mb-1">System Integrity</div>
-        <div class="text-lg font-black text-emerald-400">98.4%</div>
-      </div>
-    </div>
-  </aside>
+    .sidebar-link:hover { background: rgba(124, 58, 237, 0.1); color: #fff; }
+    .sidebar-link.active { background: rgba(124, 58, 237, 0.15); color: #fff; border-right: 2px solid var(--accent); }
+   </style>
+   <script>
+    function openDrawer() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.add('opacity-100', 'pointer-events-auto');
+    }
+    function closeDrawer() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.remove('opacity-100', 'pointer-events-auto');
+    }
+   </script>
+ </head>
+ <body class="flex h-screen overflow-hidden bg-slate-950 text-[#f8fafc]">
+   <!-- Sidebar Backdrop Overlay -->
+   <div id="sidebar-overlay" onclick="closeDrawer()" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
-  <!-- Main View -->
-  <main class="flex-1 flex flex-col h-full overflow-hidden">
-    <!-- Header -->
-    <header class="h-16 border-b border-white/5 flex items-center justify-between px-10 bg-[#010409]/50 shrink-0">
-      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Command Center / <span class="text-white">WAR_ROOM</span></div>
-      <div class="flex items-center gap-4 text-xs font-bold">
-        <span class="text-rose-500 flex items-center gap-1.5 font-black uppercase tracking-wider bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/10 animate-pulse">
-          <span class="w-2 h-2 bg-rose-500 rounded-full"></span> 1 ACTIVE THREAT
-        </span>
-      </div>
-    </header>
+   <!-- Sidebar -->
+   <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#010409] border-r border-white/5 flex flex-col h-full transition-transform duration-300 transform -translate-x-full md:translate-x-0 shrink-0">
+     <button onclick="closeDrawer()" class="absolute top-6 right-6 text-slate-500 hover:text-white md:hidden focus:outline-none"><i data-lucide="x" class="w-6 h-6"></i></button>
+     <div class="p-8 text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
+     <nav class="flex-1 px-4 space-y-1">
+       <a href="/dashboard" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="layout-grid"></i> Overview</a>
+       <a href="/copilot" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="bot"></i> AI Copilot</a>
+       <a href="/war-room" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-white"><i data-lucide="map"></i> War Room</a>
+       <a href="/history" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="history"></i> Logs</a>
+       <a href="/executive" class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-white"><i data-lucide="trending-up"></i> ROI</a>
+     </nav>
+     <div class="p-6 border-t border-white/5 bg-[#010409]">
+       <div class="glass p-4 rounded-xl text-center relative overflow-hidden group">
+         <div class="text-[10px] font-bold text-slate-500 uppercase mb-1">System Integrity</div>
+         <div class="text-lg font-black text-emerald-400">98.4%</div>
+       </div>
+     </div>
+   </aside>
+ 
+   <!-- Main View -->
+   <main class="flex-1 flex flex-col h-full overflow-hidden">
+     <!-- Mobile Header -->
+     <header class="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#010409]/50 md:hidden shrink-0 w-full">
+       <button onclick="openDrawer()" class="text-white focus:outline-none"><i data-lucide="menu" class="w-6 h-6"></i></button>
+       <div class="text-lg font-bold flex items-center gap-2">⚡ ACIE</div>
+       <div class="w-6"></div>
+     </header>
 
-    <!-- Content Area (Grid) -->
-    <div class="flex-1 grid grid-cols-4 gap-6 p-8 overflow-hidden min-h-0">
-      <!-- Interactive Threat Vector Map -->
-      <div class="col-span-3 glass p-6 rounded-[32px] relative overflow-hidden flex flex-col border border-white/5">
+     <!-- Desktop Header -->
+     <header class="hidden md:flex h-16 border-b border-white/5 items-center justify-between px-10 bg-[#010409]/50 shrink-0">
+       <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Command Center / <span class="text-white">WAR_ROOM</span></div>
+       <div class="flex items-center gap-4 text-xs font-bold">
+         <span class="text-rose-500 flex items-center gap-1.5 font-black uppercase tracking-wider bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/10 animate-pulse">
+           <span class="w-2 h-2 bg-rose-500 rounded-full"></span> 1 ACTIVE THREAT
+         </span>
+       </div>
+     </header>
+ 
+     <!-- Content Area (Grid) -->
+     <div class="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 md:p-8 overflow-y-auto lg:overflow-hidden min-h-0">
+       <!-- Interactive Threat Vector Map -->
+       <div class="col-span-1 lg:col-span-3 glass p-6 rounded-[32px] relative overflow-hidden flex flex-col border border-white/5">
         <div class="flex justify-between items-center mb-4 relative z-20">
           <h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i> Global Threat Vector Map</h3>
           <div class="flex items-center gap-4 text-[10px] font-mono text-slate-400">

@@ -37,15 +37,15 @@ export default async function handler(req, res) {
       <p class="text-slate-500 text-sm font-medium tracking-wide">Enter the engineering command center</p>
     </div>
 
-    <form class="space-y-5" onsubmit="return false">
+    <form class="space-y-5" onsubmit="window.location.href='/dashboard'; return false">
       <div>
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Identity / Email</label>
-        <input type="email" class="input-field w-full px-5 py-4 rounded-xl text-sm" placeholder="name@enterprise.com">
+        <input type="email" class="input-field w-full px-5 py-4 rounded-xl text-sm" placeholder="name@enterprise.com" required>
       </div>
 
       <div>
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Access Key / Password</label>
-        <input type="password" class="input-field w-full px-5 py-4 rounded-xl text-sm" placeholder="••••••••">
+        <input type="password" class="input-field w-full px-5 py-4 rounded-xl text-sm" placeholder="••••••••" required>
       </div>
 
       <div class="flex items-center justify-between px-1">
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     </div>
 
     <!-- GitHub Button -->
-    <button class="w-full glass py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-sm hover:bg-white/5 transition-all border-white/10 group">
+    <button onclick="window.location.href='/dashboard'" class="w-full glass py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-sm hover:bg-white/5 transition-all border-white/10 group">
       <i data-lucide="github" class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"></i>
       Continue with GitHub
     </button>

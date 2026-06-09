@@ -1,17 +1,11 @@
-import axios from 'axios';
+import { fetchRecords } from '../src/telemetry_service.js';
 
 export default async function handler(req, res) {
   const { q } = req.query;
   const query = q ? q.toLowerCase() : "";
-  
-  // Internal fetch to the telemetry layer to keep JSONBin keys isolated
-  const protocol = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers['host'];
-  const telemetryUrl = `${protocol}://${host}/api/telemetry`;
 
   try {
-    const telemetryRes = await axios.get(telemetryUrl);
-    const records = telemetryRes.data.records || [];
+    const records = await fetchRecords();
     const latest = records[0];
 
     if (!latest) {
