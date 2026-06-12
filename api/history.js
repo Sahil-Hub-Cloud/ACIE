@@ -11,7 +11,8 @@ export default async function handler(req, res) {
     }
 
     const r = await axios.get(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY }
+      headers: { 'X-Master-Key': JSONBIN_KEY },
+      timeout: 5000
     });
     records = r.data.record.records || [];
   } catch (e) {

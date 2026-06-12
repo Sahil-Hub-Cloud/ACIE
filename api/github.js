@@ -1,4 +1,5 @@
 import axios from 'axios';
+import crypto from 'node:crypto';
 import { parseFile } from '../src/parser/parser.js';
 const JSONBIN_ID = process.env.JSONBIN_ID;
 const JSONBIN_KEY = process.env.JSONBIN_KEY;
@@ -6,6 +7,16 @@ const JSONBIN_KEY = process.env.JSONBIN_KEY;
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE_ONLINE' });
   const body = req.body;
+  
+  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const hmac = crypto.createHmac('sha256', webhookSecret);
+    const digest = 'sha256=' + hmac.update(JSON.stringify(body)).digest('hex');
+    if (req.headers['x-hub-signature-256'] !== digest) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+  }
+
   if (!body.pull_request) return res.status(200).json({ status: 'ignored' });
   if (!JSONBIN_ID || !JSONBIN_KEY) {
     console.error('JSONBin environment variables are not configured');
@@ -23,12 +34,12 @@ export default async function handler(req, res) {
   const headers = { Authorization: "token " + process.env.GITHUB_TOKEN, Accept: 'application/vnd.github.v3+json' };
 
   try {
-    const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers });
+    const filesRes = await axios.get("https://api.github.com/repos/" + repo + "/pulls/" + prNumber + "/files", { headers, timeout: 5000 });
     const changedFiles = filesRes.data.filter(f => f.filename.match(/\.(js|ts|jsx|tsx)$/));
     
     // 1. DEP PROPAGATION
     const changedBases = changedFiles.map(f => f.filename.split('/').pop().replace(/\.[jt]sx?$/, ''));
-    const treeRes = await axios.get("https://api.github.com/repos/" + repo + "/git/trees/" + headSha + "?recursive=1", { headers });
+    const treeRes = await axios.get("https://api.github.com/repos/" + repo + "/git/trees/" + headSha + "?recursive=1", { headers, timeout: 5000 });
     const allFiles = treeRes.data.tree.filter(f => f.path.match(/\.(js|ts|jsx|tsx)$/));
     
     let dependentFiles = new Set();
@@ -37,7 +48,7 @@ export default async function handler(req, res) {
     for (const file of allFiles) {
       if (changedFiles.some(f => f.filename === file.path)) continue;
       try {
-        const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.path + "?ref=" + headSha, { headers });
+        const contentRes = await axios.get("https://api.github.com/repos/" + repo + "/contents/" + file.path + "?ref=" + headSha, { headers, timeout: 5000 });
         const content = Buffer.from(contentRes.data.content, 'base64').toString('utf-8');
         
         changedBases.forEach(base => {
@@ -57,8 +68,8 @@ export default async function handler(req, res) {
 
     for (const file of changedFiles) {
       try {
-        const baseRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${baseSha}`, { headers });
-        const headRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${headSha}`, { headers });
+        const baseRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${baseSha}`, { headers, timeout: 5000 });
+        const headRes = await axios.get(`https://api.github.com/repos/${repo}/contents/${file.filename}?ref=${headSha}`, { headers, timeout: 5000 });
         
         const baseContent = Buffer.from(baseRes.data.content, 'base64').toString('utf-8');
         const headContent = Buffer.from(headRes.data.content, 'base64').toString('utf-8');
@@ -91,7 +102,7 @@ export default async function handler(req, res) {
     }
 
     // 3. PERSIST OMEGA SCHEMA
-    const historyRes = await axios.get("https://api.jsonbin.io/v3/b/" + JSONBIN_ID + "/latest", { headers: { "X-Master-Key": JSONBIN_KEY } });
+    const historyRes = await axios.get("https://api.jsonbin.io/v3/b/" + JSONBIN_ID + "/latest", { headers: { "X-Master-Key": JSONBIN_KEY }, timeout: 5000 });
     const records = historyRes.data.record.records || [];
     
     const depCount = dependentFiles.size;
@@ -114,7 +125,7 @@ export default async function handler(req, res) {
     });
 
     await axios.put("https://api.jsonbin.io/v3/b/" + JSONBIN_ID, { records: records.slice(0, 50) }, { 
-      headers: { "X-Master-Key": JSONBIN_KEY, "Content-Type": "application/json" } 
+      headers: { "X-Master-Key": JSONBIN_KEY, "Content-Type": "application/json" }, timeout: 5000 
     });
 
     return res.status(200).json({ status: 'success' });
