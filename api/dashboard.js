@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.redirect(302, '/api/auth/login');
   }
 
-  // Fetch workspace and telemetry
+  // Fetch workspace
   const { data: workspace } = await supabaseAdmin
     .from('workspaces')
     .select('id, installation_id')
@@ -16,24 +16,41 @@ export default async function handler(req, res) {
 
   let initialRecords = [];
   if (workspace?.id) {
-    const { data: telemetry } = await supabaseAdmin
+    // Fixed: Query telemetry with proper repository join
+    const { data: telemetry, error } = await supabaseAdmin
       .from('telemetry')
-      .select('*, repositories!inner(full_name)')
+      .select(`
+        *,
+        repositories!inner(
+          id,
+          full_name,
+          workspace_id
+        )
+      `)
       .eq('repositories.workspace_id', workspace.id)
       .order('created_at', { ascending: false })
       .limit(10);
-      
-    if (telemetry) {
+    
+    if (error) {
+      console.error('Telemetry fetch error:', error);
+    } else if (telemetry) {
+      // Fixed: Include all necessary fields for the UI
       initialRecords = telemetry.map(t => ({
         prNumber: t.pr_number,
-        repo: t.repositories.full_name,
-        securityScore: t.security_score,
+        prTitle: t.pr_title || 'Untitled PR',
+        prUrl: t.pr_url || '#',
+        prAuthor: t.pr_author || 'unknown',
+        repo: t.repositories?.full_name || 'Unknown Repo',
+        securityScore: t.security_score || 100,
         confidence: t.root_cause && t.root_cause !== 'None Detected' ? 'HIGH' : 'LOW',
-        dependencyRisk: t.risk,
-        severity: t.risk,
+        dependencyRisk: t.risk || 'LOW',
+        severity: t.risk || 'LOW',
         rootCause: t.root_cause || 'None Detected',
-        dependencyCount: t.affected_count,
-        dependentFiles: t.blast_radius?.dependentFiles || []
+        suggestedFix: t.suggested_fix || 'Standard review',
+        dependencyCount: t.affected_count || 0,
+        dependentFiles: Array.isArray(t.blast_radius) ? t.blast_radius : [],
+        filesChanged: t.files_changed || 0,
+        healthScore: t.health_score || 100
       }));
     }
   }
@@ -83,7 +100,7 @@ export default async function handler(req, res) {
       function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const ease = progress * (2 - progress); // Ease out quad
+        const ease = progress * (2 - progress);
         const current = start + ease * (end - start);
         element.innerHTML = formatFn ? formatFn(current) : Math.round(current);
         if (progress < 1) {
@@ -109,26 +126,27 @@ export default async function handler(req, res) {
           secRing.setAttribute('stroke-dasharray', secScore + ', 100');
         }
 
-        // Cause Confidence
         const qualVal = latest.confidence || "NONE";
         const qualEl = document.getElementById('qual-val');
         qualEl.innerText = qualVal;
         qualEl.className = 'text-3xl font-black ' + (qualVal === 'HIGH' ? 'text-rose-500' : 'text-cyan-400');
         
-        // Dep. Risk
         const issueVal = latest.dependencyRisk || "LOW";
         const issueEl = document.getElementById('issue-val');
         issueEl.innerText = issueVal;
         issueEl.className = 'text-3xl font-black ' + (issueVal === 'CRITICAL' ? 'text-rose-500' : 'text-orange-500');
 
-        // Health / Severity
         const severityVal = latest.severity || "LOW";
         const healthEl = document.getElementById('health-val');
         healthEl.innerText = severityVal;
         healthEl.className = 'text-3xl font-black ' + (severityVal === 'CRITICAL' ? 'text-rose-500' : 'text-cyan-400');
 
-        // Weekly ROI
-        const roiVal = records.length * 5000;
+        // Fixed: Calculate ROI based on actual risk levels
+        const roiVal = records.reduce((sum, pr) => {
+          if (pr.severity === 'HIGH') return sum + 10000;
+          if (pr.severity === 'MEDIUM') return sum + 5000;
+          return sum + 2000;
+        }, 0);
         animateValue(document.getElementById('weekly-roi-val'), 0, roiVal, 1200, (v) => "$" + Math.round(v).toLocaleString());
         
         // Hydrate Activity Feed with Intelligence
@@ -138,8 +156,9 @@ export default async function handler(req, res) {
             const deps = pr.dependentFiles && pr.dependentFiles.length > 0 ? '<div class="text-[8px] text-indigo-300 mt-2 uppercase tracking-tighter font-bold bg-indigo-500/10 p-1.5 rounded-md border border-indigo-500/10">Downstream: ' + pr.dependentFiles.join(', ') + '</div>' : '';
             return '<div class="glass-inner p-4 border border-white/5 bg-slate-950/20 rounded-xl mb-3 hover:border-white/10 transition-colors">' +
               '<div class="flex justify-between items-start">' +
-                '<div>' +
-                  '<div class="text-xs font-bold text-white">PR #' + pr.prNumber + ' — ' + pr.repo + '</div>' +
+                '<div class="flex-1">' +
+                  '<div class="text-xs font-bold text-white">PR #' + pr.prNumber + ' — ' + pr.prTitle + '</div>' +
+                  '<div class="text-[10px] text-slate-400 mt-1">' + pr.repo + ' · by ' + pr.prAuthor + '</div>' +
                   '<div class="text-[10px] text-rose-400 mt-1.5 uppercase font-black bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/10 inline-block">' + pr.severity + ' RISK</div>' +
                 '</div>' +
                 '<div class="text-[10px] font-mono text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5">' + pr.dependencyCount + ' DEPS</div>' +
@@ -151,7 +170,7 @@ export default async function handler(req, res) {
         } else {
           feedContainer.innerHTML = '<p class="text-gray-600 text-xs text-center italic mt-10">Waiting for incoming PRs...</p>';
         }
-      } catch (e) { console.error("Re-wire failed", e); }
+      } catch (e) { console.error("Hydration failed", e); }
     }
 
     function openDrawer() {
@@ -166,7 +185,6 @@ export default async function handler(req, res) {
     window.onload = () => {
       hydrateTitan();
       
-      // System Integrity sidebar gauge animation
       const integrityVal = document.getElementById('sys-integrity-val');
       if (integrityVal) {
         animateValue(integrityVal, 0, 98.4, 1500, (v) => v.toFixed(1) + "%");
@@ -181,10 +199,8 @@ export default async function handler(req, res) {
   </script>
 </head>
 <body class="flex h-screen overflow-hidden bg-slate-950 text-[#f8fafc]">
-  <!-- Sidebar Backdrop Overlay -->
   <div id="sidebar-overlay" onclick="closeDrawer()" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
-  <!-- Sidebar -->
   <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#010409] border-r border-white/5 flex flex-col h-full transition-transform duration-300 transform -translate-x-full md:translate-x-0 shrink-0">
     <button onclick="closeDrawer()" class="absolute top-6 right-6 text-slate-500 hover:text-white md:hidden focus:outline-none"><i data-lucide="x" class="w-6 h-6"></i></button>
     <div class="p-8 text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
@@ -209,22 +225,18 @@ export default async function handler(req, res) {
     </div>
   </aside>
 
-  <!-- Main View Container -->
   <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-    <!-- Mobile Header -->
     <header class="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#010409]/50 md:hidden shrink-0 w-full">
       <button onclick="openDrawer()" class="text-white focus:outline-none"><i data-lucide="menu" class="w-6 h-6"></i></button>
       <div class="text-lg font-bold flex items-center gap-2">⚡ ACIE</div>
       <div class="w-6"></div>
     </header>
 
-    <!-- Header Desktop -->
     <header class="hidden md:flex h-16 border-b border-white/5 items-center justify-between px-10 bg-[#010409]/50 shrink-0">
       <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">${session.githubUsername || 'User'}</span></div>
       <div class="flex items-center gap-4 text-xs font-bold"><span class="text-emerald-500 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> AGENTS ONLINE</span></div>
     </header>
     
-    <!-- Page Content Scroll Area -->
     <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
       ${!workspace?.installation_id ? `
       <div class="glass p-6 rounded-2xl relative overflow-hidden group border border-accent/30 bg-accent/5">
@@ -235,12 +247,11 @@ export default async function handler(req, res) {
             <h3 class="text-sm font-bold text-white mb-1">Connect your repository to see live data</h3>
             <p class="text-xs text-slate-400">Install the GitHub App to automatically sync your repositories and PR telemetry.</p>
           </div>
-          <a href="https://github.com/apps/YOUR_GITHUB_APP_NAME/installations/new" target="_blank" class="px-6 py-3 bg-white text-black text-xs font-bold rounded-xl transition-all hover:scale-105">Install ACIE on GitHub</a>
+          <a href="https://github.com/apps/ACIE-bot/installations/new" target="_blank" class="px-6 py-3 bg-white text-black text-xs font-bold rounded-xl transition-all hover:scale-105">Install ACIE on GitHub</a>
         </div>
       </div>
       ` : ''}
       
-      <!-- Top Stats Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass p-6 rounded-2xl relative overflow-hidden group dashboard-card">
           <div class="absolute inset-0 bg-gradient-to-tr from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
@@ -289,7 +300,6 @@ export default async function handler(req, res) {
         </div>
       </div>
 
-      <!-- Bottom Layout Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="col-span-1 lg:col-span-2 glass p-8 rounded-[32px] min-h-[400px] flex flex-col relative overflow-hidden dashboard-card">
           <div class="flex justify-between items-center mb-6">
@@ -351,4 +361,5 @@ export default async function handler(req, res) {
     </div>
   </main>
   <script>lucide.createIcons();</script>
-</body></html>`);}
+</body></html>`);
+}
