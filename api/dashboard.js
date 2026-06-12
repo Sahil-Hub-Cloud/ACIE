@@ -189,7 +189,7 @@ export default async function handler(req, res) {
 
     <!-- Header Desktop -->
     <header class="hidden md:flex h-16 border-b border-white/5 items-center justify-between px-10 bg-[#010409]/50 shrink-0">
-      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">${session.githubUsername}</span></div>
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">${session.githubUsername || 'User'}</span></div>
       <div class="flex items-center gap-4 text-xs font-bold"><span class="text-emerald-500 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> AGENTS ONLINE</span></div>
     </header>
     
