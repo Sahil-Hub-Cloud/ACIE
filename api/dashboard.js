@@ -1,4 +1,13 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+import { getSession } from '../src/auth/session.js';
+
+export default async function handler(req, res) {
+  const session = await getSession(req, res);
+  if (!session.userId) {
+    return res.redirect(302, '/api/auth/login');
+  }
+
+  res.setHeader('Content-Type','text/html');
+  return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -163,6 +172,9 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
           <div id="sys-integrity-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-[1500ms] ease-out" style="width: 0%"></div>
         </div>
       </div>
+      <a href="/api/auth/logout" class="block text-center mt-4 text-xs text-slate-500 hover:text-white transition-colors">
+        <i data-lucide="log-out" class="w-4 h-4 inline-block mr-1"></i> Logout
+      </a>
     </div>
   </aside>
 
@@ -177,7 +189,7 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
 
     <!-- Header Desktop -->
     <header class="hidden md:flex h-16 border-b border-white/5 items-center justify-between px-10 bg-[#010409]/50 shrink-0">
-      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">ACIE_CORE</span></div>
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">Command Center / <span class="text-white">${session.githubUsername}</span></div>
       <div class="flex items-center gap-4 text-xs font-bold"><span class="text-emerald-500 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> AGENTS ONLINE</span></div>
     </header>
     

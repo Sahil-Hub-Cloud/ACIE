@@ -1,4 +1,10 @@
+import { getSession } from '../src/auth/session.js';
+
 export default async function handler(req, res) {
+  const session = await getSession(req, res);
+  const isLoggedIn = !!session.userId;
+  const ctaLink = isLoggedIn ? '/dashboard' : '/api/auth/login';
+
   res.setHeader('Content-Type', 'text/html');
   return res.status(200).send(`<!DOCTYPE html>
 <html lang="en">
@@ -89,7 +95,7 @@ export default async function handler(req, res) {
               <li class="flex items-center gap-2.5 text-white/20"><i data-lucide="x" class="w-4 h-4 text-white/10"></i> Priority support</li>
             </ul>
           </div>
-          <a href="https://github.com/Sahil-Hub-Cloud/ACIE" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ GET_STARTED ]</a>
+          <a href="${ctaLink}" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ GET_STARTED ]</a>
         </div>
 
         <!-- Pro Tier Card (Featured) -->
@@ -114,7 +120,7 @@ export default async function handler(req, res) {
               <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Priority support</li>
             </ul>
           </div>
-          <a href="mailto:sahilshaik4679@gmail.com" class="block text-center py-3.5 px-6 rounded-xl border border-accent bg-accent/25 hover:bg-accent/40 transition-all font-bold text-xs text-white uppercase tracking-wider">[ START_TRIAL ]</a>
+          <a href="${ctaLink}" class="block text-center py-3.5 px-6 rounded-xl border border-accent bg-accent/25 hover:bg-accent/40 transition-all font-bold text-xs text-white uppercase tracking-wider">[ START_TRIAL ]</a>
         </div>
 
         <!-- Enterprise Tier Card -->
@@ -138,7 +144,7 @@ export default async function handler(req, res) {
               <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Dedicated support</li>
             </ul>
           </div>
-          <a href="mailto:sahilshaik4679@gmail.com" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ CONTACT_US ]</a>
+          <a href="${ctaLink}" class="block text-center py-3.5 px-6 rounded-xl border border-white/10 hover:border-accent hover:bg-accent/10 transition-all font-semibold text-xs text-slate-300 hover:text-white uppercase tracking-wider">[ CONTACT_US ]</a>
         </div>
       </div>
 

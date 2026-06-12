@@ -1,4 +1,11 @@
-export default async function handler(req,res){res.setHeader('Content-Type','text/html');return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>
+import { getSession } from '../src/auth/session.js';
+
+export default async function handler(req, res) {
+  const session = await getSession(req, res);
+  const isLoggedIn = !!session.userId;
+  
+  res.setHeader('Content-Type','text/html');
+  return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Google Maps for codebases.</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,8 +24,11 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
 <body class="flex flex-col items-center">
   <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl px-12 py-5 flex justify-between items-center">
     <div class="text-xl font-bold flex items-center gap-2">⚡ ACIE</div>
-    <div class="flex gap-8 text-xs font-semibold text-slate-400">
-      <a href="/login">Dashboard</a><a href="/executive">ROI</a><a href="/login" class="bg-white text-black px-5 py-2 rounded-lg">Get Started</a>
+    <div class="flex gap-8 text-xs font-semibold text-slate-400 items-center">
+      ${isLoggedIn 
+        ? '<a href="/api/auth/logout" class="hover:text-white">Logout</a><a href="/dashboard" class="bg-white text-black px-5 py-2 rounded-lg">Open Dashboard</a>'
+        : '<a href="/api/auth/login" class="hover:text-white">Login</a><a href="/api/auth/login" class="bg-white text-black px-5 py-2 rounded-lg">Get Started</a>'
+      }
     </div>
   </nav>
 
@@ -26,7 +36,12 @@ export default async function handler(req,res){res.setHeader('Content-Type','tex
     <div class="mb-6 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase">Intelligence Layer V3.2 Active</div>
     <h1 class="text-6xl md:text-8xl font-extrabold tracking-tighter mb-6 leading-tight">Predict the Break.<br><span class="grad-txt">Control the Map.</span></h1>
     <p class="text-slate-400 text-lg max-w-2xl mb-12">"The All-in-One Google Maps for codebases." <br>Architectural impact, security hotspots, and blast radius mapped in real-time.</p>
-    <div class="flex gap-4"><a href="/login" class="px-10 py-4 bg-white text-black rounded-xl font-bold text-sm">Launch Command Center</a></div>
+    <div class="flex gap-4">
+      ${isLoggedIn
+        ? '<a href="/dashboard" class="px-10 py-4 bg-white text-black rounded-xl font-bold text-sm">Open Dashboard</a>'
+        : '<a href="/api/auth/login" class="px-10 py-4 bg-white text-black rounded-xl font-bold text-sm">Launch Command Center</a>'
+      }
+    </div>
   </section>
 
   <!-- How It Works Step Timeline -->
