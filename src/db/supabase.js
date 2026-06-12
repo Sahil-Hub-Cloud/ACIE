@@ -3,11 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Strict validation to prevent PGRST125 errors
 if (!supabaseUrl) {
-    console.warn('NEXT_PUBLIC_SUPABASE_URL is not defined');
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
+}
+if (!supabaseServiceRoleKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
 }
 
-export const supabaseAdmin = createClient(
-    supabaseUrl || '',
-    supabaseServiceRoleKey || ''
-);
+// Remove any trailing slashes from the URL to prevent PGRST125 errors
+const cleanUrl = supabaseUrl.replace(/\/$/, '');
+
+export const supabaseAdmin = createClient(cleanUrl, supabaseServiceRoleKey);
