@@ -1,4 +1,5 @@
 import { getSession } from '../src/auth/session.js';
+import { supabaseAdmin } from '../src/db/supabase.js';
 
 export default async function handler(req, res) {
   const session = await getSession(req, res);
@@ -6,8 +7,40 @@ export default async function handler(req, res) {
     return res.redirect(302, '/api/auth/login');
   }
 
+  // Fetch workspace and telemetry
+  const { data: workspace } = await supabaseAdmin
+    .from('workspaces')
+    .select('id')
+    .eq('owner_id', session.userId)
+    .single();
+
+  let initialRecords = [];
+  if (workspace?.id) {
+    const { data: telemetry } = await supabaseAdmin
+      .from('telemetry')
+      .select('*, repositories!inner(full_name)')
+      .eq('repositories.workspace_id', workspace.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (telemetry) {
+      initialRecords = telemetry.map(t => ({
+        prNumber: t.pr_number,
+        repo: t.repositories.full_name,
+        securityScore: t.security_score,
+        confidence: t.root_cause && t.root_cause !== 'None Detected' ? 'HIGH' : 'LOW',
+        dependencyRisk: t.risk,
+        severity: t.risk,
+        rootCause: t.root_cause || 'None Detected',
+        dependencyCount: t.affected_count,
+        dependentFiles: t.blast_radius?.dependentFiles || []
+      }));
+    }
+  }
+
   res.setHeader('Content-Type','text/html');
   return res.status(200).send(`<!DOCTYPE html><html><head><title>ACIE — Command Center</title>
+  <script>window.__INITIAL_TELEMETRY__ = ${JSON.stringify(initialRecords)};</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -64,10 +97,8 @@ export default async function handler(req, res) {
 
     async function hydrateTitan() {
       try {
-        const r = await fetch("/api/telemetry?view=latest");
-        const d = await r.json();
-        const records = d.records || [];
-        const latest = d.latest || records[0] || {};
+        const records = window.__INITIAL_TELEMETRY__ || [];
+        const latest = records[0] || {};
 
         // Hydrate Top Stats with animations
         const secScore = latest.securityScore || 100;

@@ -1,8 +1,7 @@
 import axios from 'axios';
 import crypto from 'node:crypto';
 import { parseFile } from '../src/parser/parser.js';
-const JSONBIN_ID = process.env.JSONBIN_ID;
-const JSONBIN_KEY = process.env.JSONBIN_KEY;
+import { supabaseAdmin } from '../src/db/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(200).json({ status: 'ACIE_ONLINE' });
@@ -18,13 +17,27 @@ export default async function handler(req, res) {
   }
 
   if (!body.pull_request) return res.status(200).json({ status: 'ignored' });
-  if (!JSONBIN_ID || !JSONBIN_KEY) {
-    console.error('JSONBin environment variables are not configured');
-    return res.status(500).json({ error: 'Telemetry storage is not configured' });
-  }
   if (!process.env.GITHUB_TOKEN) {
     console.error('GITHUB_TOKEN environment variable is not configured');
     return res.status(500).json({ error: 'GitHub integration is not configured' });
+  }
+
+  const installationId = body.installation?.id;
+  const githubRepoId = body.repository?.id;
+
+  if (!installationId || !githubRepoId) {
+    return res.status(200).json({ status: 'ignored, missing installation info' });
+  }
+
+  const { data: repository } = await supabaseAdmin
+    .from('repositories')
+    .select('id, workspace_id')
+    .eq('installation_id', installationId)
+    .eq('github_repo_id', githubRepoId)
+    .single();
+
+  if (!repository) {
+    return res.status(200).json({ status: 'unregistered installation' });
   }
 
   const repo = body.repository.full_name;
@@ -101,31 +114,30 @@ export default async function handler(req, res) {
       } catch (e) { /* skip */ }
     }
 
-    // 3. PERSIST OMEGA SCHEMA
-    const historyRes = await axios.get("https://api.jsonbin.io/v3/b/" + JSONBIN_ID + "/latest", { headers: { "X-Master-Key": JSONBIN_KEY }, timeout: 5000 });
-    const records = historyRes.data.record.records || [];
-    
+    // 3. PERSIST TO SUPABASE
     const depCount = dependentFiles.size;
     const depRisk = depCount > 5 ? 'HIGH' : 'LOW';
     const severity = (confidence === 'HIGH' || depCount > 5) ? 'CRITICAL' : 'LOW';
-
-    records.unshift({
-      prNumber, repo,
-      securityScore: 98,
-      qualityScore: 96,
-      healthScore: confidence === "HIGH" ? 40 : Math.round(100 - (depCount * 2)),
-      dependencyCount: depCount,
-      dependencyRisk: depRisk,
-      rootCause, suggestedFix, confidence,
-      severity,
-      timestamp: new Date().toISOString(),
-      impactedSystems: [...systems],
-      impactedFiles: changedFiles.map(f => f.filename),
-      dependentFiles: [...dependentFiles].slice(0, 5)
-    });
-
-    await axios.put("https://api.jsonbin.io/v3/b/" + JSONBIN_ID, { records: records.slice(0, 50) }, { 
-      headers: { "X-Master-Key": JSONBIN_KEY, "Content-Type": "application/json" }, timeout: 5000 
+    const risk = severity === 'CRITICAL' ? 'HIGH' : severity; // Map to LOW/MEDIUM/HIGH
+    
+    await supabaseAdmin.from('telemetry').insert({
+      repository_id: repository.id,
+      pr_number: prNumber,
+      pr_title: body.pull_request.title,
+      pr_author: body.pull_request.user.login,
+      pr_url: body.pull_request.html_url,
+      risk: risk,
+      affected_count: depCount,
+      blast_radius: {
+        impactedSystems: [...systems],
+        impactedFiles: changedFiles.map(f => f.filename),
+        dependentFiles: [...dependentFiles].slice(0, 5)
+      },
+      files_changed: changedFiles.length,
+      health_score: confidence === "HIGH" ? 40 : Math.round(100 - (depCount * 2)),
+      security_score: 98,
+      root_cause: rootCause,
+      suggested_fix: suggestedFix
     });
 
     return res.status(200).json({ status: 'success' });
