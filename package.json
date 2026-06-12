@@ -9,13 +9,25 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.1",
     "axios": "^1.6.0",
+    "cookie": "^1.1.1",
     "dotenv": "^16.0.0",
+    "framer-motion": "^10.16.4",
+    "jose": "^6.2.3",
     "neo4j-driver": "^6.0.1",
-    "probot": "^13.0.0"
+    "probot": "^13.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.2.2"
   },
   "keywords": [
     "github-app",
