@@ -1,137 +1,85 @@
--- Supabase Schema for ACIE
-
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- 1. Users Table
-CREATE TABLE public.users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    github_id TEXT UNIQUE NOT NULL,
-    email TEXT,
-    name TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- 1. Create Users Table
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  github_id BIGINT UNIQUE NOT NULL,
+  email TEXT UNIQUE,
+  name TEXT NOT NULL,
+  avatar_url TEXT,
+  github_username TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login_at TIMESTAMPTZ
 );
 
--- 2. Workspaces Table
-CREATE TABLE public.workspaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    owner_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- 2. Create Workspaces Table
+CREATE TABLE workspaces (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Repositories Table
-CREATE TABLE public.repositories (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
-    installation_id TEXT,
-    github_repo_id TEXT,
-    full_name TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- 3. Create Repositories Table
+CREATE TABLE repositories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE NOT NULL,
+  installation_id BIGINT NOT NULL,
+  github_repo_id BIGINT NOT NULL,
+  full_name TEXT NOT NULL,
+  default_branch TEXT DEFAULT 'main',
+  is_active BOOLEAN DEFAULT TRUE,
+  installed_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(installation_id, github_repo_id)
 );
 
--- 4. Telemetry Table
-CREATE TABLE public.telemetry (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    repository_id UUID NOT NULL REFERENCES public.repositories(id) ON DELETE CASCADE,
-    pr_number INTEGER NOT NULL,
-    pr_title TEXT,
-    risk TEXT,
-    affected_count INTEGER,
-    blast_radius JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- 4. Create Telemetry Table (The PR Data)
+CREATE TABLE telemetry (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id UUID REFERENCES repositories(id) ON DELETE CASCADE NOT NULL,
+  pr_number INTEGER NOT NULL,
+  pr_title TEXT,
+  pr_author TEXT,
+  pr_url TEXT,
+  risk TEXT CHECK (risk IN ('LOW', 'MEDIUM', 'HIGH')),
+  affected_count INTEGER DEFAULT 0,
+  blast_radius JSONB DEFAULT '[]',
+  files_changed INTEGER DEFAULT 0,
+  health_score INTEGER,
+  security_score INTEGER,
+  root_cause TEXT,
+  suggested_fix TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Settings Table
-CREATE TABLE public.settings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
-    slack_webhook_url TEXT,
-    slack_enabled BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- 5. Enable Row-Level Security (RLS) on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE repositories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE telemetry ENABLE ROW LEVEL SECURITY;
 
--- ==========================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- ==========================================
+-- 6. Create RLS Policies (The "Trust" Layer)
+-- Users can only see their own data
+CREATE POLICY "Users can only view their own data" ON users
+  FOR SELECT USING (auth.uid() = id);
 
--- Enable RLS on all tables
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.repositories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.telemetry ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+-- Workspaces are tied to the owner
+CREATE POLICY "Workspaces are isolated by owner" ON workspaces
+  FOR ALL USING (auth.uid() = owner_id);
 
--- users
-CREATE POLICY "Users can view their own profile"
-ON public.users FOR SELECT
-USING (id = auth.uid());
-
-CREATE POLICY "Users can update their own profile"
-ON public.users FOR UPDATE
-USING (id = auth.uid());
-
--- workspaces
-CREATE POLICY "Users can view their workspaces"
-ON public.workspaces FOR SELECT
-USING (owner_id = auth.uid());
-
-CREATE POLICY "Users can insert their workspaces"
-ON public.workspaces FOR INSERT
-WITH CHECK (owner_id = auth.uid());
-
-CREATE POLICY "Users can update their workspaces"
-ON public.workspaces FOR UPDATE
-USING (owner_id = auth.uid());
-
--- repositories
-CREATE POLICY "Users can view repos in their workspaces"
-ON public.repositories FOR SELECT
-USING (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
-
-CREATE POLICY "Users can insert repos in their workspaces"
-ON public.repositories FOR INSERT
-WITH CHECK (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
-
-CREATE POLICY "Users can update repos in their workspaces"
-ON public.repositories FOR UPDATE
-USING (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
-
--- telemetry
-CREATE POLICY "Users can view telemetry in their workspaces"
-ON public.telemetry FOR SELECT
-USING (repository_id IN (
-    SELECT id FROM public.repositories WHERE workspace_id IN (
-        SELECT id FROM public.workspaces WHERE owner_id = auth.uid()
+-- Repositories belong to the user's workspace
+CREATE POLICY "Repositories are isolated by workspace owner" ON repositories
+  FOR ALL USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
     )
-));
+  );
 
-CREATE POLICY "Users can insert telemetry in their workspaces"
-ON public.telemetry FOR INSERT
-WITH CHECK (repository_id IN (
-    SELECT id FROM public.repositories WHERE workspace_id IN (
-        SELECT id FROM public.workspaces WHERE owner_id = auth.uid()
+-- Telemetry is strictly tied to the user's repository
+CREATE POLICY "Telemetry is isolated by repository owner" ON telemetry
+  FOR ALL USING (
+    repository_id IN (
+      SELECT r.id FROM repositories r
+      JOIN workspaces w ON w.id = r.workspace_id
+      WHERE w.owner_id = auth.uid()
     )
-));
-
-CREATE POLICY "Users can update telemetry in their workspaces"
-ON public.telemetry FOR UPDATE
-USING (repository_id IN (
-    SELECT id FROM public.repositories WHERE workspace_id IN (
-        SELECT id FROM public.workspaces WHERE owner_id = auth.uid()
-    )
-));
-
--- settings
-CREATE POLICY "Users can view settings of their workspaces"
-ON public.settings FOR SELECT
-USING (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
-
-CREATE POLICY "Users can insert settings for their workspaces"
-ON public.settings FOR INSERT
-WITH CHECK (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
-
-CREATE POLICY "Users can update settings of their workspaces"
-ON public.settings FOR UPDATE
-USING (workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid()));
+  );
