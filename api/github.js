@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'ignored, missing installation info' });
   }
 
-  const { data: repository } = await supabaseAdmin
+  let { data: repository } = await supabaseAdmin
     .from('repositories')
     .select('id, workspace_id')
     .eq('installation_id', installationId)
@@ -37,7 +37,34 @@ export default async function handler(req, res) {
     .single();
 
   if (!repository) {
-    return res.status(200).json({ status: 'unregistered installation' });
+    // Auto-register repository if the installation belongs to a valid workspace
+    const { data: workspace } = await supabaseAdmin
+      .from('workspaces')
+      .select('id')
+      .eq('installation_id', installationId)
+      .single();
+
+    if (!workspace) {
+      return res.status(200).json({ status: 'unregistered installation' });
+    }
+
+    const { data: newRepo, error } = await supabaseAdmin
+      .from('repositories')
+      .insert({
+        workspace_id: workspace.id,
+        installation_id: installationId,
+        github_repo_id: githubRepoId,
+        full_name: body.repository.full_name
+      })
+      .select('id, workspace_id')
+      .single();
+
+    if (error || !newRepo) {
+      console.error('Failed to auto-register repository:', error);
+      return res.status(500).json({ error: 'Database error registering repository' });
+    }
+    
+    repository = newRepo;
   }
 
   const repo = body.repository.full_name;

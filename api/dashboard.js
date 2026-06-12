@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   // Fetch workspace and telemetry
   const { data: workspace } = await supabaseAdmin
     .from('workspaces')
-    .select('id')
+    .select('id, installation_id')
     .eq('owner_id', session.userId)
     .single();
 
@@ -226,6 +226,20 @@ export default async function handler(req, res) {
     
     <!-- Page Content Scroll Area -->
     <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
+      ${!workspace?.installation_id ? `
+      <div class="glass p-6 rounded-2xl relative overflow-hidden group border border-accent/30 bg-accent/5">
+        <div class="absolute inset-0 bg-gradient-to-tr from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+        <div class="flex items-center gap-4">
+          <div class="p-3 bg-accent/20 text-accent rounded-xl"><i data-lucide="github" class="w-8 h-8"></i></div>
+          <div class="flex-1">
+            <h3 class="text-sm font-bold text-white mb-1">Connect your repository to see live data</h3>
+            <p class="text-xs text-slate-400">Install the GitHub App to automatically sync your repositories and PR telemetry.</p>
+          </div>
+          <a href="https://github.com/apps/YOUR_GITHUB_APP_NAME/installations/new" target="_blank" class="px-6 py-3 bg-white text-black text-xs font-bold rounded-xl transition-all hover:scale-105">Install ACIE on GitHub</a>
+        </div>
+      </div>
+      ` : ''}
+      
       <!-- Top Stats Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass p-6 rounded-2xl relative overflow-hidden group dashboard-card">
