@@ -17,7 +17,8 @@ export async function getSession(req, res) {
 
 export async function saveSession(req, res, data) {
     const session = await getIronSession(req, res, sessionOptions);
-    session.userId = data.userId;
-    session.githubUsername = data.githubUsername;
+    if (data.userId !== undefined) session.userId = data.userId;
+    if (data.githubUsername !== undefined) session.githubUsername = data.githubUsername;
+    if (data.oauthState !== undefined) session.oauthState = data.oauthState;
     await session.save();
 }

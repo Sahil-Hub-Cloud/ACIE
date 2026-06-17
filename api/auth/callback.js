@@ -11,7 +11,11 @@ export default async function handler(req, res) {
     const session = await getSession(req, res);
     
     if (!session.oauthState || state !== session.oauthState) {
-        return res.status(403).json({ error: 'Invalid state parameter - CSRF failed' });
+        const reason = !session.oauthState 
+            ? 'Missing oauthState in session' 
+            : `State mismatch. Expected: ${session.oauthState}, Got: ${state}`;
+        console.error('CSRF validation failed:', reason);
+        return res.status(403).json({ error: 'Invalid state parameter - CSRF failed', reason });
     }
 
     const clientId = process.env.GITHUB_CLIENT_ID;

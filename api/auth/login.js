@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getSession } from '../../src/auth/session.js';
+import { saveSession } from '../../src/auth/session.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -11,14 +11,12 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Missing GITHUB_CLIENT_ID' });
     }
 
-    const state = crypto.randomBytes(16).toString('hex');
+    const oauthState = crypto.randomBytes(16).toString('hex');
     
-    const session = await getSession(req, res);
-    session.oauthState = state;
-    await session.save();
+    await saveSession(req, res, { oauthState });
 
     const scope = 'read:user,user:email';
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&state=${state}`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&state=${oauthState}`;
     
     res.redirect(302, githubAuthUrl);
 }
