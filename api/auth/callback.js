@@ -9,10 +9,10 @@ export default async function handler(req, res) {
     if (!code || !state) return res.status(400).json({ error: 'Missing code or state parameter' });
 
     const session = await getSession(req, res);
-    
+
     if (!session.oauthState || state !== session.oauthState) {
-        const reason = !session.oauthState 
-            ? 'Missing oauthState in session' 
+        const reason = !session.oauthState
+            ? 'Missing oauthState in session'
             : `State mismatch. Expected: ${session.oauthState}, Got: ${state}`;
         console.error('CSRF validation failed:', reason);
         return res.status(403).json({ error: 'Invalid state parameter - CSRF failed', reason });
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
             const { error: workspaceError } = await supabaseAdmin
                 .from('workspaces')
                 .insert({ owner_id: user.id, name: `${githubUsername}'s Workspace`, slug });
-            
+
             if (workspaceError) throw workspaceError;
         }
 
@@ -85,10 +85,18 @@ export default async function handler(req, res) {
         res.redirect(302, '/dashboard');
     } catch (error) {
         console.error('OAuth callback error:', error);
-        res.status(500).json({ 
-  error: 'Authentication failed', 
-  details: error.message,
-  stack: error.stack 
-});
+        res.setHeader('Content-Type', 'text/html');
+        return res.status(500).send(`
+            <h1 style="color:red; font-family: sans-serif;">Login Failed</h1>
+            <p><b>Error:</b> ${error.message}</p>
+            <pre style="background:#f0f0f0; padding:10px;">${error.stack}</pre>
+        `);
+    } {
+        console.error('OAuth callback error:', error);
+        res.status(500).json({
+            error: 'Authentication failed',
+            details: error.message,
+            stack: error.stack
+        });
     }
 }
