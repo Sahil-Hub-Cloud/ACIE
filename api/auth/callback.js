@@ -85,6 +85,10 @@ export default async function handler(req, res) {
         res.redirect(302, '/dashboard');
     } catch (error) {
         console.error('OAuth callback error:', error);
-        res.status(500).json({ error: 'Authentication failed' });
+        res.status(500).json({ 
+  error: 'Authentication failed', 
+  details: error.message,
+  stack: error.stack 
+});
     }
 }
