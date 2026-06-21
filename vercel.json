@@ -1,4 +1,4 @@
-{
+﻿{
   "version": 2,
   "functions": {
     "api/*.js": {
@@ -7,11 +7,9 @@
     }
   },
   "rewrites": [
-    { "source": "/login", "destination": "/api/login.js" },
+    { "source": "/", "destination": "/dashboard" },
     { "source": "/dashboard", "destination": "/api/dashboard.js" },
     { "source": "/copilot", "destination": "/api/copilot.js" },
-    { "source": "/executive", "destination": "/api/executive.js" },
-    { "source": "/war-room", "destination": "/api/war-room.js" },
     { "source": "/history", "destination": "/api/history.js" },
     { "source": "/api/github", "destination": "/api/github.js" },
     { "source": "/api/telemetry", "destination": "/api/telemetry.js" },
