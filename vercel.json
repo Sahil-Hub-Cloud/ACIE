@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "installCommand": "npm install -g pnpm && pnpm install",
   "buildCommand": "pnpm --filter @acie/shared build && pnpm --filter @acie/web build",
+  "installCommand": "pnpm install --no-optional",
   "framework": "nextjs",
   "cleanUrls": true,
   "env": {
