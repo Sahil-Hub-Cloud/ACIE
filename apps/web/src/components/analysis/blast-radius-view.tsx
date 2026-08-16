@@ -1,7 +1,7 @@
 'use client';
 
 import { Network, Server, ArrowRight } from 'lucide-react';
-import type { BlastRadiusResult } from '@acie/shared';
+import type { BlastRadiusResult } from '../../lib/types';
 
 interface BlastRadiusViewProps {
   blastRadius: BlastRadiusResult;
