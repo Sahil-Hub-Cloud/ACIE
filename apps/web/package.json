@@ -9,8 +9,10 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@libsql/client": "^0.6.0",
     "@xyflow/react": "^12.0.4",
     "clsx": "^2.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.363.0",
     "next": "^14.1.4",
     "react": "^18.2.0",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@acie/typescript-config": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
