@@ -1,0 +1,34 @@
+{
+  "name": "@acie/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ACIE CLI — Index repos and analyze blast radius from the command line",
+  "bin": {
+    "acie": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup src/index.ts --format cjs --dts --clean --shims",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@acie/shared": "workspace:*",
+    "better-sqlite3": "^9.4.0",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "glob": "^10.3.0",
+    "ora": "^8.0.1",
+    "simple-git": "^3.20.0",
+    "tree-sitter": "^0.21.0",
+    "tree-sitter-typescript": "^0.21.0"
+  },
+  "devDependencies": {
+    "@acie/typescript-config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

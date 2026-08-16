@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #020617;
+  --surface: #0b0f1a;
+  --accent: #7c3aed;
+  --cyan: #06b6d4;
+}
+
+body {
+  background-color: var(--bg);
+  color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Styles */
+.glass {
+  background: rgba(11, 15, 26, 0.35);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-inner {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.grad-txt {
+  background: linear-gradient(135deg, #fff 40%, var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animations */
+.shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.02) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-pulse 1.6s infinite linear;
+}
+
+@keyframes shimmer-pulse {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* React Flow customizations */
+.react-flow__renderer {
+  background-color: #020617;
+}
+
+.react-flow__node {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(11, 15, 26, 0.8) !important;
+  color: #fff !important;
+}
+
+.react-flow__handle {
+  background: #7c3aed !important;
+}
+
+.react-flow__controls-button {
+  background: rgba(11, 15, 26, 0.8) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(124, 58, 237, 0.2) !important;
+}

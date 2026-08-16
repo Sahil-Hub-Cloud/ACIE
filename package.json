@@ -1,41 +1,25 @@
 {
   "name": "acie",
-  "version": "1.0.0",
-  "description": "ACIE - AI Change Impact Engine. Analyzes code dependencies and posts blast radius reports on GitHub Pull Requests.",
-  "main": "index.js",
-  "type": "module",
-  "engines": {
-    "node": "24.x"
-  },
+  "version": "2.0.0",
+  "private": true,
+  "description": "ACIE 2.0 — AI Change Impact Engine. Google Maps for your codebase.",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "build": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.108.1",
-    "axios": "^1.17.0",
-    "cookie": "^1.1.1",
-    "dotenv": "^16.0.0",
-    "framer-motion": "^10.16.4",
-    "iron-session": "^8.0.4",
-    "jose": "^6.2.3",
-    "neo4j-driver": "^6.0.1",
-    "probot": "^13.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "cli": "pnpm --filter @acie/cli",
+    "api": "pnpm --filter @acie/api",
+    "web": "pnpm --filter @acie/web"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "typescript": "^5.2.2"
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
   },
-  "keywords": [
-    "github-app",
-    "probot",
-    "code-analysis",
-    "blast-radius"
-  ],
-  "author": "",
-  "license": "ISC"
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.30.2"
 }

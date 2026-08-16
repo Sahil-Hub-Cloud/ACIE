@@ -1,6 +1,44 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# SQLite database
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Certs & keys
 *.pem
+*.key
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
 .vercel
 
-.vercel
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

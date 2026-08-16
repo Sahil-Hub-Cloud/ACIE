@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.api
+    ports:
+      - '3001:3001'
+    volumes:
+      - acie-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3001
+      - DATABASE_PATH=/app/data/acie.db
+      - SESSION_SECRET=a_secure_session_secret_for_docker_containers
+      - JWT_SECRET=a_secure_jwt_secret_for_docker_containers
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    restart: always
+
+volumes:
+  acie-data:
