@@ -8,8 +8,8 @@ import { ApiClient } from '../../../lib/api';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('admin@acie.dev');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -41,19 +41,8 @@ function LoginContent() {
 
     try {
       // For demo, we support admin@acie.dev with any password, or simulate login
-      if (email.trim() === 'admin@acie.dev' && password === 'password') {
-        const mockUser = {
-          id: 1,
-          username: 'Administrator',
-          email: 'admin@acie.dev',
-          avatarUrl: null,
-          role: 'admin',
-        };
-        ApiClient.setAuth('mock_jwt_token_for_dashboard_admin', mockUser);
-        router.push('/');
-      } else {
-        throw new Error('Invalid email or password. Hint: Use admin@acie.dev & password');
-      }
+      // Try GitHub OAuth first — manual login is disabled in production
+      throw new Error('Please use GitHub OAuth to sign in.');
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);
@@ -61,7 +50,7 @@ function LoginContent() {
   };
 
   const triggerGithubOAuth = () => {
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || 'Ov23ct41n8B8YyA4qOee'; // default dev client ID
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
     const scope = 'read:user,user:email';
     const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/login` : '';
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&redirect_uri=${encodeURIComponent(redirectUri)}`;
@@ -97,7 +86,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-accent transition-all"
-                placeholder="admin@acie.dev"
+                placeholder="you@example.com"
                 required
               />
             </div>
@@ -111,7 +100,7 @@ function LoginContent() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-accent transition-all"
-                placeholder="password"
+                placeholder="••••••••"
                 required
               />
             </div>
@@ -137,7 +126,7 @@ function LoginContent() {
             className="w-full glass py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-sm hover:bg-white/5 transition-all border-white/10 group cursor-pointer"
           >
             <Github className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
-            Continue with GitHub
+            Sign in with GitHub
           </button>
         </>
       )}

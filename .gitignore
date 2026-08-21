@@ -35,6 +35,9 @@ data/
 .DS_Store
 Thumbs.db
 
+# Archive (v1 legacy)
+archive/
+
 # Vercel
 .vercel
 
