@@ -4,32 +4,38 @@ import { run, get } from '../../../../lib/db';
 import {
   calculateBlastRadiusInMemory,
   formatPRComment,
+  ACIE_COMMENT_MARKER,
   type GraphEdge,
 } from '../../../../lib/blast-radius';
+import { resolveRepoToken, githubFetch, isGitHubAppConfigured } from '../../../../lib/github-app';
 
-// ── GitHub API helpers ──────────────────────────────────────────────────────
+export const dynamic = 'force-dynamic';
+// Analysis fans out to several GitHub API calls; give it room to finish.
+export const maxDuration = 60;
 
-const GITHUB_API = 'https://api.github.com';
+const ANALYZED_ACTIONS = new Set(['opened', 'synchronize', 'reopened']);
+const SOURCE_FILE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rb|java|kt)$/;
+const MAX_SEARCHES = 6;
+const MAX_FILE_PAGES = 3;
 
-function getGitHubHeaders(): Record<string, string> {
-  const token = process.env.GITHUB_TOKEN;
-  return {
-    Accept: 'application/vnd.github.v3+json',
-    ...(token ? { Authorization: `token ${token}` } : {}),
-  };
+// ── Signature verification ──────────────────────────────────────────────────
+
+/**
+ * Constant-time comparison of GitHub's HMAC signature against our own.
+ * GitHub signs the *raw* body, so this must run before any JSON parsing.
+ */
+function verifySignature(rawBody: string, signature: string | null, secret: string): boolean {
+  if (!signature) return false;
+
+  const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex')}`;
+
+  const a = Buffer.from(signature, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
-async function githubFetch(path: string): Promise<any> {
-  const res = await fetch(`${GITHUB_API}${path}`, {
-    headers: getGitHubHeaders(),
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub API ${res.status}: ${path}`);
-  }
-  return res.json();
-}
-
-// ── Diff analysis (extract changed exports) ─────────────────────────────────
+// ── Diff analysis ───────────────────────────────────────────────────────────
 
 interface ChangedSymbol {
   filePath: string;
@@ -37,32 +43,35 @@ interface ChangedSymbol {
   changeType: 'added' | 'modified' | 'removed';
 }
 
+const EXPORT_PATTERNS = [
+  /export\s+(?:default\s+)?(?:async\s+)?function\s+(\w+)/,
+  /export\s+(?:default\s+)?class\s+(\w+)/,
+  /export\s+interface\s+(\w+)/,
+  /export\s+type\s+(\w+)/,
+  /export\s+(?:const|let|var)\s+(\w+)/,
+  /export\s+enum\s+(\w+)/,
+  /^\s*def\s+(\w+)/,
+  /^\s*func\s+(\w+)/,
+];
+
 function analyzePatch(filename: string, patch: string): ChangedSymbol[] {
   if (!patch) return [];
+
   const symbols: ChangedSymbol[] = [];
-  const lines = patch.split('\n');
   const removedExports: string[] = [];
   const addedExports: string[] = [];
 
-  const exportPatterns = [
-    /export\s+(?:default\s+)?(?:async\s+)?function\s+(\w+)/,
-    /export\s+(?:default\s+)?class\s+(\w+)/,
-    /export\s+interface\s+(\w+)/,
-    /export\s+type\s+(\w+)/,
-    /export\s+(?:const|let|var)\s+(\w+)/,
-    /export\s+enum\s+(\w+)/,
-  ];
+  for (const line of patch.split('\n')) {
+    const isRemoved = line.startsWith('-') && !line.startsWith('---');
+    const isAdded = line.startsWith('+') && !line.startsWith('+++');
+    if (!isRemoved && !isAdded) continue;
 
-  for (const line of lines) {
-    if (line.startsWith('-') && !line.startsWith('---')) {
-      for (const regex of exportPatterns) {
-        const match = line.slice(1).match(regex);
-        if (match) { removedExports.push(match[1]); break; }
-      }
-    } else if (line.startsWith('+') && !line.startsWith('+++')) {
-      for (const regex of exportPatterns) {
-        const match = line.slice(1).match(regex);
-        if (match) { addedExports.push(match[1]); break; }
+    const content = line.slice(1);
+    for (const pattern of EXPORT_PATTERNS) {
+      const match = content.match(pattern);
+      if (match) {
+        (isRemoved ? removedExports : addedExports).push(match[1]);
+        break;
       }
     }
   }
@@ -73,14 +82,14 @@ function analyzePatch(filename: string, patch: string): ChangedSymbol[] {
     }
   }
   for (const name of addedExports) {
-    if (removedExports.includes(name)) {
-      symbols.push({ filePath: filename, symbolName: name, changeType: 'modified' });
-    } else {
-      symbols.push({ filePath: filename, symbolName: name, changeType: 'added' });
-    }
+    symbols.push({
+      filePath: filename,
+      symbolName: name,
+      changeType: removedExports.includes(name) ? 'modified' : 'added',
+    });
   }
 
-  // If no exports found but file was modified, mark whole file as changed
+  // A body-only edit still changes behavior; record the file itself.
   if (symbols.length === 0 && patch.includes('@@')) {
     symbols.push({ filePath: filename, symbolName: '*', changeType: 'modified' });
   }
@@ -88,67 +97,103 @@ function analyzePatch(filename: string, patch: string): ChangedSymbol[] {
   return symbols;
 }
 
-// ── Search for importers of changed files ───────────────────────────────────
+// ── Downstream importer discovery ───────────────────────────────────────────
 
+function moduleBases(filenames: string[]): Map<string, string> {
+  const bases = new Map<string, string>();
+  for (const file of filenames) {
+    const base = (file.split('/').pop() || file).replace(SOURCE_FILE, '');
+    if (base && !bases.has(base)) bases.set(base, file);
+  }
+  return bases;
+}
+
+/**
+ * Ask GitHub code search who imports the changed modules.
+ * Bounded to MAX_SEARCHES so a large PR can't stall the webhook.
+ */
 async function findImporters(
   repoFullName: string,
   filenames: string[],
-  headSha: string,
+  token: string | null
 ): Promise<GraphEdge[]> {
   const edges: GraphEdge[] = [];
+  const seen = new Set<string>();
+  const bases = moduleBases(filenames);
+  const targets = Array.from(bases.keys()).slice(0, MAX_SEARCHES);
 
-  // Extract base module names (without extension) from changed filenames
-  const bases = filenames.map(f => {
-    const name = f.split('/').pop() || f;
-    return name.replace(/\.(ts|tsx|js|jsx|py|go)$/, '');
-  });
+  for (const base of targets) {
+    try {
+      const query = `repo:${repoFullName} "${base}" in:file`;
+      const results = await githubFetch<{ items?: Array<{ path: string }> }>(
+        `/search/code?q=${encodeURIComponent(query)}&per_page=30`,
+        {},
+        token
+      );
 
-  try {
-    // Use GitHub code search to find files that import these modules
-    for (const base of bases) {
-      const query = `repo:${repoFullName} ${base} language:typescript language:javascript`;
-      const results = await githubFetch(`/search/code?q=${encodeURIComponent(query)}&per_page=10`);
-
-      if (results.items) {
-        for (const item of results.items) {
-          const filePath = item.path;
-          if (!filenames.includes(filePath)) {
-            edges.push({
-              sourceFile: filePath,
-              targetFile: filenames.find(f => {
-                const b = f.split('/').pop()?.replace(/\.\w+$/, '') || '';
-                return base === b;
-              }) || filenames[0],
-            });
-          }
-        }
+      for (const item of results.items ?? []) {
+        if (filenames.includes(item.path)) continue;
+        if (seen.has(item.path)) continue;
+        seen.add(item.path);
+        edges.push({ sourceFile: item.path, targetFile: bases.get(base)! });
       }
-    }
-  } catch (err) {
-    console.warn('[ACIE] Code search failed, using file-level fallback:', (err as Error).message);
-  }
-
-  // Fallback: if no edges found, create a simple relationship between changed files
-  if (edges.length === 0 && filenames.length > 1) {
-    for (let i = 0; i < filenames.length; i++) {
-      for (let j = i + 1; j < filenames.length; j++) {
-        // Check if files are in similar directories (likely related)
-        const dir1 = filenames[i].split('/').slice(0, -1).join('/');
-        const dir2 = filenames[j].split('/').slice(0, -1).join('/');
-        if (dir1 === dir2 || dir1.startsWith(dir2) || dir2.startsWith(dir1)) {
-          edges.push({ sourceFile: filenames[i], targetFile: filenames[j] });
-        }
-      }
+    } catch (error) {
+      console.warn(`[ACIE] Code search failed for "${base}":`, (error as Error).message);
     }
   }
 
   return edges;
 }
 
-// ── Store analysis in database ──────────────────────────────────────────────
+// ── Idempotent PR comment ───────────────────────────────────────────────────
+
+/**
+ * Update our existing ACIE comment if there is one, otherwise create it.
+ * Without this, every push to a branch would add another comment.
+ */
+async function upsertPrComment(
+  repoFullName: string,
+  prNumber: number,
+  body: string,
+  token: string | null
+): Promise<'created' | 'updated'> {
+  const existing = await githubFetch<Array<{ id: number; body?: string }>>(
+    `/repos/${repoFullName}/issues/${prNumber}/comments?per_page=100`,
+    {},
+    token
+  );
+
+  const mine = existing.find((comment) => comment.body?.includes(ACIE_COMMENT_MARKER));
+
+  if (mine) {
+    await githubFetch(
+      `/repos/${repoFullName}/issues/comments/${mine.id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+      },
+      token
+    );
+    return 'updated';
+  }
+
+  await githubFetch(
+    `/repos/${repoFullName}/issues/${prNumber}/comments`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    },
+    token
+  );
+  return 'created';
+}
+
+// ── Persistence ─────────────────────────────────────────────────────────────
 
 async function storeAnalysis(params: {
-  repoId: number;
+  repoFullName: string;
   prNumber: number;
   prUrl: string;
   prTitle: string;
@@ -157,156 +202,219 @@ async function storeAnalysis(params: {
   riskLevel: string;
   changedFiles: string[];
   changedSymbols: ChangedSymbol[];
-  blastRadius: any;
+  blastRadius: unknown;
   recommendations: string[];
 }) {
   try {
-    await run(`
-      INSERT INTO analyses (
-        repo_id, pr_number, pr_url, pr_title, pr_author,
-        risk_score, risk_level, changed_files, changed_symbols,
-        impacted_services, blast_radius, recommendations
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      params.repoId,
-      params.prNumber,
-      params.prUrl,
-      params.prTitle,
-      params.prAuthor,
-      params.riskScore,
-      params.riskLevel,
-      JSON.stringify(params.changedFiles),
-      JSON.stringify(params.changedSymbols),
-      JSON.stringify(params.blastRadius.impactedServices),
-      JSON.stringify(params.blastRadius),
-      JSON.stringify(params.recommendations),
-    ]);
-  } catch (err) {
-    console.warn('[ACIE] Failed to store analysis:', (err as Error).message);
+    await run(
+      `CREATE TABLE IF NOT EXISTS analyses (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         repo_id INTEGER,
+         repo_full_name TEXT,
+         pr_number INTEGER NOT NULL,
+         pr_url TEXT NOT NULL,
+         pr_title TEXT,
+         pr_author TEXT,
+         risk_score INTEGER NOT NULL,
+         risk_level TEXT NOT NULL,
+         changed_files TEXT,
+         changed_symbols TEXT,
+         impacted_services TEXT,
+         blast_radius TEXT,
+         recommendations TEXT,
+         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+       )`
+    );
+
+    const repo = await get<{ id: number }>(
+      'SELECT id FROM repos WHERE owner || "/" || name = ? OR url LIKE ?',
+      [params.repoFullName, `%${params.repoFullName}%`]
+    );
+
+    const result = params.blastRadius as { impactedServices: unknown };
+
+    await run(
+      `INSERT INTO analyses (
+         repo_id, repo_full_name, pr_number, pr_url, pr_title, pr_author,
+         risk_score, risk_level, changed_files, changed_symbols,
+         impacted_services, blast_radius, recommendations
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        repo?.id ?? null,
+        params.repoFullName,
+        params.prNumber,
+        params.prUrl,
+        params.prTitle,
+        params.prAuthor,
+        params.riskScore,
+        params.riskLevel,
+        JSON.stringify(params.changedFiles),
+        JSON.stringify(params.changedSymbols),
+        JSON.stringify(result.impactedServices),
+        JSON.stringify(params.blastRadius),
+        JSON.stringify(params.recommendations),
+      ]
+    );
+  } catch (error) {
+    console.warn('[ACIE] Analysis not persisted:', (error as Error).message);
   }
 }
 
-// ── Post comment on PR ─────────────────────────────────────────────────────
+async function storeInstallation(payload: any, removed: boolean) {
+  const installationId = payload.installation?.id;
+  if (!installationId) return;
 
-async function postPRComment(repoFullName: string, prNumber: number, body: string) {
-  const res = await fetch(
-    `${GITHUB_API}/repos/${repoFullName}/issues/${prNumber}/comments`,
-    {
-      method: 'POST',
-      headers: {
-        ...getGitHubHeaders(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ body }),
-    },
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Failed to post PR comment: ${res.status} ${err}`);
+  try {
+    await run(
+      `CREATE TABLE IF NOT EXISTS installations (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         installation_id INTEGER NOT NULL UNIQUE,
+         account_login TEXT,
+         account_type TEXT,
+         repository_count INTEGER DEFAULT 0,
+         setup_action TEXT,
+         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+       )`
+    );
+    await run(
+      `INSERT INTO installations (installation_id, account_login, account_type, repository_count, setup_action)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(installation_id) DO UPDATE SET
+         account_login = excluded.account_login,
+         account_type = excluded.account_type,
+         repository_count = excluded.repository_count,
+         setup_action = excluded.setup_action,
+         updated_at = CURRENT_TIMESTAMP`,
+      [
+        installationId,
+        payload.installation?.account?.login ?? null,
+        payload.installation?.account?.type ?? null,
+        payload.repositories?.length ?? payload.repositories_added?.length ?? 0,
+        removed ? 'uninstall' : 'update',
+      ]
+    );
+  } catch (error) {
+    console.warn('[ACIE] Installation not persisted:', (error as Error).message);
   }
 }
 
-// ── Main webhook handler ────────────────────────────────────────────────────
+// ── Main handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
+  // The raw body must be read once, before parsing, for signature checks.
+  const rawBody = await req.text();
+  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+  const event = req.headers.get('x-github-event') ?? 'unknown';
+  const delivery = req.headers.get('x-github-delivery');
+
+  // Unsigned requests are only tolerated while the secret is unset (local dev).
+  if (webhookSecret) {
+    const signature = req.headers.get('x-hub-signature-256');
+    if (!verifySignature(rawBody, signature, webhookSecret)) {
+      console.warn(`[ACIE] Rejected webhook ${delivery}: signature mismatch`);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+  } else {
+    console.warn('[ACIE] GITHUB_WEBHOOK_SECRET is unset — accepting an unsigned webhook.');
+  }
+
+  let payload: any;
   try {
-    // 1. Verify webhook signature (if secret is configured)
-    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const signature = req.headers.get('x-hub-signature-256');
-      if (!signature) {
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-      }
-      const body = await req.text();
-      const expected = 'sha256=' + crypto.createHmac('sha256', webhookSecret).update(body).digest('hex');
-      if (signature !== expected) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
-      // Re-parse body since we read it for verification
-      var payload = JSON.parse(body);
-    } else {
-      var payload = await req.json();
+    payload = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: 'Malformed JSON body' }, { status: 400 });
+  }
+
+  const dryRun = new URL(req.url).searchParams.get('dryRun') === '1';
+
+  try {
+    // GitHub sends this when you save the webhook — answering it proves liveness.
+    if (event === 'ping') {
+      return NextResponse.json({ ok: true, event, zen: payload.zen ?? null, dryRun });
     }
 
-    // 2. Only process pull_request events
-    if (!payload.pull_request) {
-      return NextResponse.json({ status: 'ignored', reason: 'Not a pull_request event' });
+    if (event === 'installation' || event === 'installation_repositories') {
+      await storeInstallation(payload, event === 'installation' && payload.action === 'deleted');
+      return NextResponse.json({ ok: true, event, action: payload.action });
+    }
+
+    if (event !== 'pull_request' || !payload.pull_request) {
+      return NextResponse.json({ ok: true, ignored: true, event });
+    }
+
+    const action = payload.action;
+
+    // Filter on the action before touching any nested fields: GitHub sends
+    // dozens of pull_request actions we don't care about (labeled, edited,
+    // closed...) and a malformed payload should be ignored, not 500.
+    if (!ANALYZED_ACTIONS.has(action)) {
+      return NextResponse.json({ ok: true, ignored: true, event, action });
     }
 
     const pr = payload.pull_request;
-    const action = payload.action;
-    const repoFullName = payload.repository.full_name;
-    const prNumber = pr.number;
-    const prUrl = pr.html_url;
-    const prTitle = pr.title;
-    const prAuthor = pr.user.login;
-    const headSha = pr.head.sha;
-
-    // Only analyze on open, synchronize (new commits), or reopen
-    if (!['opened', 'synchronize', 'reopened'].includes(action)) {
-      return NextResponse.json({ status: 'ignored', reason: `PR action '${action}' not analyzed` });
+    const repoFullName: string | undefined = payload.repository?.full_name;
+    if (!repoFullName || !pr?.number) {
+      return NextResponse.json({ ok: true, ignored: true, reason: 'Incomplete payload' });
     }
 
-    console.log(`[ACIE] Analyzing PR #${prNumber} in ${repoFullName} (${action})`);
+    const [owner, repoName] = repoFullName.split('/');
+    const prNumber: number = pr.number;
+    const installationId: number | undefined = payload.installation?.id;
 
-    // 3. Fetch changed files from GitHub
-    const files = await githubFetch(
-      `/repos/${repoFullName}/pulls/${prNumber}/files?per_page=100`,
-    );
+    if (!isGitHubAppConfigured() && !process.env.GITHUB_TOKEN) {
+      return NextResponse.json(
+        { error: 'No GitHub credentials configured. Set GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY, or GITHUB_TOKEN.' },
+        { status: 503 }
+      );
+    }
 
-    const changedFiles = files
-      .filter((f: any) => f.filename.match(/\.(ts|tsx|js|jsx|py|go)$/))
-      .map((f: any) => ({
-        filename: f.filename,
-        status: f.status,
-        patch: f.patch || '',
-        additions: f.additions,
-        deletions: f.deletions,
-      }));
+    const token = await resolveRepoToken(owner, repoName, installationId);
+
+    // Changed files, paginated (GitHub caps this endpoint at 3000 files).
+    const files: Array<{ filename: string; patch?: string }> = [];
+    for (let page = 1; page <= MAX_FILE_PAGES; page++) {
+      const batch = await githubFetch<Array<{ filename: string; patch?: string }>>(
+        `/repos/${repoFullName}/pulls/${prNumber}/files?per_page=100&page=${page}`,
+        {},
+        token
+      );
+      files.push(...batch);
+      if (batch.length < 100) break;
+    }
+
+    const changedFiles = files.filter((file) => SOURCE_FILE.test(file.filename));
 
     if (changedFiles.length === 0) {
-      return NextResponse.json({ status: 'ignored', reason: 'No source files changed' });
+      return NextResponse.json({ ok: true, ignored: true, reason: 'No source files changed' });
     }
 
-    // 4. Analyze diffs for changed symbols
-    const changedSymbols: ChangedSymbol[] = [];
-    for (const file of changedFiles) {
-      changedSymbols.push(...analyzePatch(file.filename, file.patch));
-    }
+    const changedSymbols = changedFiles.flatMap((file) =>
+      analyzePatch(file.filename, file.patch ?? '')
+    );
+    const filenames = changedFiles.map((file) => file.filename);
 
-    const filenames = changedFiles.map((f: any) => f.filename);
-
-    // 5. Find importers (downstream dependents)
-    const edges = await findImporters(repoFullName, filenames, headSha);
-
-    // 6. Calculate blast radius
+    const edges = await findImporters(repoFullName, filenames, token);
     const result = calculateBlastRadiusInMemory(filenames, changedSymbols, edges);
-
-    // 7. Format and post PR comment
     const comment = formatPRComment(prNumber, filenames, result);
 
-    try {
-      await postPRComment(repoFullName, prNumber, comment);
-      console.log(`[ACIE] Posted blast radius comment on PR #${prNumber}`);
-    } catch (err) {
-      console.error('[ACIE] Failed to post comment:', (err as Error).message);
-      // Continue even if comment posting fails — we still store the analysis
+    let commentAction: 'created' | 'updated' | 'skipped' = 'skipped';
+    if (!dryRun) {
+      try {
+        commentAction = await upsertPrComment(repoFullName, prNumber, comment, token);
+      } catch (error) {
+        // A failed comment shouldn't lose the analysis.
+        console.error('[ACIE] Comment failed:', (error as Error).message);
+      }
     }
 
-    // 8. Store analysis in database
-    // Look up repo in DB
-    const repo = await get<{ id: number }>(
-      'SELECT id FROM repos WHERE name = ? OR url LIKE ?',
-      [payload.repository.name, `%${repoFullName}%`],
-    );
-
-    if (repo) {
+    if (!dryRun) {
       await storeAnalysis({
-        repoId: repo.id,
+        repoFullName,
         prNumber,
-        prUrl,
-        prTitle,
-        prAuthor,
+        prUrl: pr.html_url,
+        prTitle: pr.title,
+        prAuthor: pr.user?.login ?? 'unknown',
         riskScore: result.riskScore,
         riskLevel: result.riskLevel,
         changedFiles: filenames,
@@ -317,24 +425,39 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      success: true,
+      ok: true,
+      event,
+      action,
+      dryRun,
+      delivery,
+      repo: repoFullName,
       prNumber,
       riskScore: result.riskScore,
       riskLevel: result.riskLevel,
-      totalImpactedFiles: result.totalImpactedFiles,
-      impactedServices: result.impactedServices.length,
-      commentPosted: true,
+      changedFiles: filenames.length,
+      impactedFiles: result.totalImpactedFiles,
+      impactedServices: result.impactedServices.map((service) => service.name),
+      entryPointsAffected: result.entryPointsAffected,
+      comment: commentAction,
+      commentPreview: dryRun ? comment : undefined,
     });
-  } catch (err) {
-    console.error('[ACIE] Webhook error:', err);
+  } catch (error) {
+    console.error('[ACIE] Webhook error:', error);
     return NextResponse.json(
-      { success: false, error: (err as Error).message },
-      { status: 500 },
+      { ok: false, error: (error as Error).message },
+      { status: 500 }
     );
   }
 }
 
-// Health check endpoint
+/** Health check — useful for confirming the endpoint is wired up correctly. */
 export async function GET() {
-  return NextResponse.json({ status: 'ACIE Webhook Online', version: '2.0' });
+  return NextResponse.json({
+    status: 'ACIE webhook online',
+    version: '2.1',
+    signatureVerification: Boolean(process.env.GITHUB_WEBHOOK_SECRET),
+    githubApp: isGitHubAppConfigured(),
+    patFallback: Boolean(process.env.GITHUB_TOKEN),
+    hints: 'POST pull_request events here. Add ?dryRun=1 to preview without commenting.',
+  });
 }

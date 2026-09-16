@@ -34,6 +34,12 @@ export interface BlastRadiusResult {
 
 const MAX_DEPTH = 10;
 
+/**
+ * Hidden marker used to find and update our own PR comment instead of
+ * posting a fresh one on every push to the branch.
+ */
+export const ACIE_COMMENT_MARKER = '<!-- acie:blast-radius -->';
+
 // Entry point patterns
 const ENTRY_POINT_PATTERNS = [
   /\.controller\.(ts|js)$/,
@@ -267,7 +273,8 @@ export function formatPRComment(
 
   const recsList = result.recommendations.map(r => `- ${r}`).join('\n');
 
-  return `## ⚡ ACIE Blast Radius Report — PR #${prNumber}
+  return `${ACIE_COMMENT_MARKER}
+## ⚡ ACIE Blast Radius Report — PR #${prNumber}
 
 ![Risk Level](https://img.shields.io/badge/Risk-${result.riskLevel.toUpperCase()}-${color}?style=for-the-badge) 
 ![Score](https://img.shields.io/badge/Score-${result.riskScore}%2F100-${color}?style=for-the-badge)

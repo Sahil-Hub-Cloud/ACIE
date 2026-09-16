@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
+import { getRequestOrigin } from '../../../../../lib/origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,18 +10,20 @@ const GITHUB_CLIENT_ID =
 const OAUTH_STATE_COOKIE = 'acie_oauth_state';
 
 /**
- * Starts the GitHub OAuth dance.
+ * Starts the GitHub user-authorization flow.
  *
- * This lives on the server so the client never needs a build-time
- * `NEXT_PUBLIC_GITHUB_CLIENT_ID` — changing the client id no longer
- * requires a rebuild, and the id can never drift from the server one.
+ * Works with both a classic OAuth App and a GitHub App — both use the same
+ * authorize endpoint and the same client id / secret pair. A GitHub App can
+ * register up to 10 callback URLs, so preview deployments and custom domains
+ * can each be allowlisted without code changes.
  */
 export async function GET(req: Request) {
+  const origin = getRequestOrigin(req);
   const requestUrl = new URL(req.url);
   const next = requestUrl.searchParams.get('next') || '/repos';
 
   if (!GITHUB_CLIENT_ID) {
-    const fallback = new URL('/login', requestUrl.origin);
+    const fallback = new URL('/login', origin);
     fallback.searchParams.set('error', 'oauth_not_configured');
     fallback.searchParams.set(
       'error_description',
@@ -29,19 +32,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(fallback.toString());
   }
 
-  // Behind a proxy (Vercel) req.url is the internal host, so prefer the
-  // forwarded host header to build the exact redirect_uri GitHub expects.
-  const forwardedHost =
-    req.headers.get('x-forwarded-host') || req.headers.get('host');
-  const forwardedProto =
-    req.headers.get('x-forwarded-proto') ||
-    (forwardedHost?.startsWith('localhost') ? 'http' : 'https');
-  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin;
-  // Must match the OAuth App's "Authorization callback URL" byte-for-byte.
-  // Override with GITHUB_OAUTH_REDIRECT_URI when the registered URL differs
-  // from the host serving this deploy (custom domains, preview builds, etc.).
+  // Must match a registered callback URL byte-for-byte.
   const redirectUri = process.env.GITHUB_OAUTH_REDIRECT_URI || `${origin}/login`;
-
   const state = `${randomBytes(16).toString('hex')}:${encodeURIComponent(next)}`;
 
   const authorizeUrl = new URL('https://github.com/login/oauth/authorize');
