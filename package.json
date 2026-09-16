@@ -2,7 +2,7 @@
   "name": "acie",
   "version": "2.0.0",
   "private": true,
-  "description": "ACIE 2.0 — AI Change Impact Engine. Google Maps for your codebase.",
+  "description": "ACIE 2.0 - AI Change Impact Engine. Google Maps for your codebase.",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -10,7 +10,6 @@
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules",
     "cli": "pnpm --filter @acie/cli",
-    "api": "pnpm --filter @acie/api",
     "web": "pnpm --filter @acie/web"
   },
   "devDependencies": {

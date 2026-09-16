@@ -51,6 +51,10 @@ function LoginContent() {
 
   const triggerGithubOAuth = () => {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    if (!clientId) {
+      setError('GitHub OAuth is not configured. Set NEXT_PUBLIC_GITHUB_CLIENT_ID in your environment and rebuild.');
+      return;
+    }
     const scope = 'read:user,user:email';
     const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/login` : '';
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&redirect_uri=${encodeURIComponent(redirectUri)}`;

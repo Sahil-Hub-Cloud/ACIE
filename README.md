@@ -1,24 +1,29 @@
-# ACIE 2.0 — AI Change Impact Engine
+# ACIE 2.0 - AI Change Impact Engine
 
 > Google Maps for your codebase.
 
-ACIE automatically analyzes every Pull Request and posts a blast radius report — telling developers exactly which files, services, and systems are affected **before** they merge.
+ACIE automatically analyzes every Pull Request and posts a blast radius report - telling developers exactly which files, services, and systems are affected **before** they merge.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 acie/
-├── apps/
-│   ├── cli/    # Core CLI — parses repos, builds dependency graphs
-│   ├── api/    # NestJS REST API — GitHub App + webhooks + analysis
-│   └── web/    # Next.js 14 dashboard — React Flow + Recharts
-├── packages/
-│   ├── shared/ # Shared TypeScript types
-│   └── config/ # ESLint + TypeScript configs
-└── archive/v1/ # Original Vercel serverless app (preserved)
+|-- apps/
+|   |-- cli/        # Core CLI - parses repos, builds dependency graphs
+|   `-- web/        # Next.js 14 dashboard + API route handlers
+|-- packages/
+|   |-- shared/     # Shared TypeScript types
+|   `-- config/     # ESLint + TypeScript configs
+`-- infra/
+    |-- docker/     # Dockerfile + docker-compose
+    `-- github/     # CI workflows
 ```
 
-## 🚀 Quick Start
+> Note: the API layer lives in `apps/web/src/app/api/*` as Next.js route handlers
+> (`/api/webhooks/analyze`, `/api/auth/*`, `/api/repos`, `/api/dashboard/*`). There is
+> no separate NestJS service.
+
+## Quick Start
 
 ```bash
 # Install dependencies
@@ -29,44 +34,34 @@ pnpm dev
 
 # Or start individually:
 pnpm cli dev        # CLI
-pnpm api dev        # NestJS API  (http://localhost:3001)
 pnpm web dev        # Next.js Web (http://localhost:3000)
 ```
 
-## 🔍 How It Works
+## How It Works
 
 1. Developer opens a Pull Request
-2. GitHub sends a webhook to ACIE API
-3. API triggers the CLI graph analyzer
-4. CLI parses the repo AST, finds changed symbols
-5. Blast radius calculator does BFS on the dependency graph
-6. Risk scorer assigns a score (0–100) and level (low/medium/high/critical)
-7. ACIE posts a detailed comment on the PR
-8. Results appear in the dashboard
+2. GitHub sends a webhook to the ACIE API route (`/api/webhooks/analyze`)
+3. The handler parses the diff, extracts changed exports, and finds downstream importers
+4. The blast radius calculator does BFS on the dependency graph
+5. The risk scorer assigns a score (0-100) and level (low/medium/high/critical)
+6. ACIE posts a detailed comment on the PR
+7. Results appear in the dashboard
 
-## 🎯 Risk Levels
+## Risk Levels
 
 | Level | Score | Meaning |
 |-------|-------|---------|
-| ✅ LOW | 0–25 | No downstream impact |
-| ⚠️ MEDIUM | 26–50 | 1-2 services affected |
-| 🔴 HIGH | 51–75 | 3+ services affected |
-| 🚨 CRITICAL | 76–100 | Entry points affected |
+| LOW | 0-25 | No downstream impact |
+| MEDIUM | 26-50 | 1-2 services affected |
+| HIGH | 51-75 | 3+ services affected |
+| CRITICAL | 76-100 | Entry points affected |
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **CLI**: Node.js, TypeScript, tree-sitter, better-sqlite3, Commander
-- **API**: NestJS 10, TypeScript, Octokit, better-sqlite3, JWT
-- **Web**: Next.js 14, React Flow, Recharts, shadcn/ui, Tailwind CSS
-- **Infra**: Turborepo, pnpm workspaces, Docker, Vercel, Render
+- **Web**: Next.js 14, React Flow, Recharts, Tailwind CSS, Turso (libSQL)
+- **Infra**: Turborepo, pnpm workspaces, Docker, Vercel
 
-## 📖 Documentation
-
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api-reference.md)
-- [Deployment](docs/deployment.md)
-- [Contributing](docs/contributing.md)
-
-## 👤 Author
+## Author
 
 Built by [Sahil-Hub-Cloud](https://github.com/Sahil-Hub-Cloud)
