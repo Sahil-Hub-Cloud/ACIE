@@ -85,6 +85,18 @@ base64 -w0 your-app.private-key.pem
 
 ## 3. Configure the environment
 
+### Automated
+
+```bash
+scripts/setup-github-app.sh <app-id> <path-to-private-key.pem> \
+  --client-id <client-id> --client-secret <client-secret> --slug <app-slug>
+```
+
+The script base64-encodes the PEM, pushes every variable to Vercel, and
+redeploys. Re-running it overwrites existing values safely.
+
+### Manual
+
 Set these on Vercel (Project → Settings → Environment Variables) or in `.env.local`:
 
 ```bash
