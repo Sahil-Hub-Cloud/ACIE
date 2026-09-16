@@ -37,7 +37,10 @@ export async function GET(req: Request) {
     req.headers.get('x-forwarded-proto') ||
     (forwardedHost?.startsWith('localhost') ? 'http' : 'https');
   const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin;
-  const redirectUri = `${origin}/login`;
+  // Must match the OAuth App's "Authorization callback URL" byte-for-byte.
+  // Override with GITHUB_OAUTH_REDIRECT_URI when the registered URL differs
+  // from the host serving this deploy (custom domains, preview builds, etc.).
+  const redirectUri = process.env.GITHUB_OAUTH_REDIRECT_URI || `${origin}/login`;
 
   const state = `${randomBytes(16).toString('hex')}:${encodeURIComponent(next)}`;
 
