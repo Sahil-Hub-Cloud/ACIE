@@ -5,11 +5,38 @@ import Image from 'next/image';
 import { ApiClient } from '../../../lib/api';
 import { useEffect, useState } from 'react';
 
+type IntegrationStatus = {
+  oauth: { configured: boolean; clientId: string | null };
+  webhooks: { configured: boolean };
+  database: { configured: boolean };
+  sessions: { configured: boolean };
+};
+
+function StatusPill({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div
+      className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-xs font-bold flex items-center gap-1.5 cursor-default ${
+        ok ? 'text-emerald-400' : 'text-amber-400'
+      }`}
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${ok ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
+      />
+      {label}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
+  const [status, setStatus] = useState<IntegrationStatus | null>(null);
 
   useEffect(() => {
     setUser(ApiClient.getPayload());
+    fetch('/api/auth/status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setStatus(data))
+      .catch(() => setStatus(null));
   }, []);
 
   return (
@@ -63,21 +90,29 @@ export default function SettingsPage() {
           </h3>
           <div className="space-y-4">
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">SQLite Driver</div>
-              <input
-                type="text"
-                readOnly
-                value="better-sqlite3"
-                className="w-full bg-white/5 border border-white/10 text-white/50 rounded-xl px-4 py-3 text-xs focus:outline-none cursor-default"
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Remote Datastore (Turso / libSQL)</div>
+              <StatusPill
+                ok={status?.database.configured ?? false}
+                label={
+                  status?.database.configured
+                    ? 'Configured'
+                    : status
+                    ? 'Not configured — set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN'
+                    : 'Checking…'
+                }
               />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Database Schema Path</div>
-              <input
-                type="text"
-                readOnly
-                value="./data/acie.db"
-                className="w-full bg-white/5 border border-white/10 text-white/50 rounded-xl px-4 py-3 text-xs font-mono focus:outline-none cursor-default"
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Session Signing Key</div>
+              <StatusPill
+                ok={status?.sessions.configured ?? false}
+                label={
+                  status?.sessions.configured
+                    ? 'JWT_SECRET present'
+                    : status
+                    ? 'Missing JWT_SECRET — sign-in cannot complete'
+                    : 'Checking…'
+                }
               />
             </div>
           </div>
@@ -97,21 +132,41 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Client ID</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">OAuth Client ID</div>
                 <input
                   type="text"
                   readOnly
-                  value="Ov23ct41n8B8YyA4qOee"
+                  value={status?.oauth.clientId ?? '—'}
                   className="w-full bg-white/5 border border-white/10 text-white/40 rounded-xl px-4 py-3 text-xs font-mono focus:outline-none cursor-default"
                 />
               </div>
 
               <div>
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Client Status</div>
-                <div className="w-full bg-white/5 border border-white/10 text-emerald-400 rounded-xl px-4 py-3.5 text-xs font-bold flex items-center gap-1.5 cursor-default">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  Connected
-                </div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">OAuth Status</div>
+                <StatusPill
+                  ok={status?.oauth.configured ?? false}
+                  label={
+                    status?.oauth.configured
+                      ? 'Connected'
+                      : status
+                      ? 'Not configured — set GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET'
+                      : 'Checking…'
+                  }
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">PR Webhook Ingestion</div>
+                <StatusPill
+                  ok={status?.webhooks.configured ?? false}
+                  label={
+                    status?.webhooks.configured
+                      ? 'Webhook secret configured'
+                      : status
+                      ? 'Not configured — set GITHUB_WEBHOOK_SECRET'
+                      : 'Checking…'
+                  }
+                />
               </div>
             </div>
           </div>

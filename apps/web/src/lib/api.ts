@@ -54,10 +54,10 @@ export class ApiClient {
   }
 
   // ── Auth API ─────────────────────────────────────────────────────────────
-  static async login(code: string) {
+  static async login(code: string, state?: string) {
     const res = await this.request<{ token: string; user: any }>('/api/auth/github', {
       method: 'POST',
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, state }),
     });
     this.setAuth(res.token, res.user);
     return res.user;
