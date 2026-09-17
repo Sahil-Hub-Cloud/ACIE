@@ -34,7 +34,11 @@ export async function GET(req: Request) {
 
   // Must match a registered callback URL byte-for-byte.
   const redirectUri = process.env.GITHUB_OAUTH_REDIRECT_URI || `${origin}/login`;
-  const state = `${randomBytes(16).toString('hex')}:${encodeURIComponent(next)}`;
+  // Only the nonce is persisted in the cookie: a pure-hex value survives cookie
+  // serialization unchanged. The full state also carries the post-login
+  // destination for the client-side redirect.
+  const nonce = randomBytes(16).toString('hex');
+  const state = `${nonce}:${encodeURIComponent(next)}`;
 
   const authorizeUrl = new URL('https://github.com/login/oauth/authorize');
   authorizeUrl.searchParams.set('client_id', GITHUB_CLIENT_ID);
@@ -43,7 +47,7 @@ export async function GET(req: Request) {
   authorizeUrl.searchParams.set('state', state);
 
   const response = NextResponse.redirect(authorizeUrl.toString());
-  response.cookies.set(OAUTH_STATE_COOKIE, state, {
+  response.cookies.set(OAUTH_STATE_COOKIE, nonce, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

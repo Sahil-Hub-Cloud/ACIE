@@ -58,11 +58,14 @@ export async function POST(req: Request) {
     }
 
     // Verify the CSRF state we issued when starting the OAuth flow.
-    const expectedState = readCookie(req, OAUTH_STATE_COOKIE);
-    if (!expectedState) {
+    // The cookie holds only the nonce; GitHub returns the full state
+    // (nonce:destination) URL-encoded, so compare the nonce segment.
+    const expectedNonce = readCookie(req, OAUTH_STATE_COOKIE);
+    if (!expectedNonce) {
       return fail('OAuth session expired or cookies are blocked. Please try signing in again.');
     }
-    if (!state || state !== expectedState) {
+    const receivedNonce = state?.split(':')[0];
+    if (!receivedNonce || receivedNonce !== expectedNonce) {
       return fail('OAuth state mismatch — sign-in request could not be verified.');
     }
 
