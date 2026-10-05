@@ -32,7 +32,9 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
 
   useEffect(() => {
-    setUser(ApiClient.getPayload());
+    ApiClient.me({ redirectOn401: false })
+      .then(setUser)
+      .catch(() => setUser(null));
     fetch('/api/auth/status')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setStatus(data))
@@ -65,18 +67,18 @@ export default function SettingsPage() {
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-black text-sm uppercase">
-                  {user?.username.slice(0, 2) || 'AD'}
+                  {user?.username?.slice(0, 2) || '??'}
                 </div>
               )}
               <div>
-                <div className="text-sm font-bold text-white">{user?.username || 'Administrator'}</div>
-                <div className="text-xs text-slate-500">{user?.email || 'admin@acie.dev'}</div>
+                <div className="text-sm font-bold text-white">{user?.username || 'Signed in'}</div>
+                <div className="text-xs text-slate-500">{user?.email || 'No email on file'}</div>
               </div>
             </div>
             <div className="glass-inner p-3 rounded-xl border border-white/5 bg-slate-950/20 text-xs flex justify-between items-center">
               <span className="text-slate-400">User Scope Privilege</span>
               <span className="px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-[10px] font-black text-accent uppercase tracking-wider">
-                {user?.role || 'admin'}
+                {user?.role || 'developer'}
               </span>
             </div>
           </div>

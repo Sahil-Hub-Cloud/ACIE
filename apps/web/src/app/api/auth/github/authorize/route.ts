@@ -9,6 +9,15 @@ const GITHUB_CLIENT_ID =
 
 const OAUTH_STATE_COOKIE = 'acie_oauth_state';
 
+/** Only same-origin absolute paths may be used as a post-login destination. */
+function safeNext(value: string | null): string {
+  if (!value) return '/repos';
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
+    return '/repos';
+  }
+  return value;
+}
+
 /**
  * Starts the GitHub user-authorization flow.
  *
@@ -20,7 +29,7 @@ const OAUTH_STATE_COOKIE = 'acie_oauth_state';
 export async function GET(req: Request) {
   const origin = getRequestOrigin(req);
   const requestUrl = new URL(req.url);
-  const next = requestUrl.searchParams.get('next') || '/repos';
+  const next = safeNext(requestUrl.searchParams.get('next'));
 
   if (!GITHUB_CLIENT_ID) {
     const fallback = new URL('/login', origin);

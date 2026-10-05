@@ -42,12 +42,19 @@ function LoginContent() {
     setStatus('Establishing secure auth token...');
     try {
       await ApiClient.login(code, state);
-      // The state carries the page the user originally wanted.
+      // The state carries the page the user originally wanted. Re-validate it
+      // here: the state comes back from GitHub and must stay same-origin.
       let next = '/repos';
       const encoded = state?.split(':')[1];
       if (encoded) {
-        const decoded = decodeURIComponent(encoded);
-        if (decoded.startsWith('/')) next = decoded;
+        try {
+          const decoded = decodeURIComponent(encoded);
+          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) {
+            next = decoded;
+          }
+        } catch {
+          // Malformed percent-encoding — keep the default destination.
+        }
       }
       router.replace(next);
     } catch (err) {

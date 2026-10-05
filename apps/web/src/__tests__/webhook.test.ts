@@ -161,6 +161,41 @@ describe('webhook signature verification', () => {
     expect(response.status).toBe(200);
     expect((await response.json()).zen).toBe('Keep it logically awesome.');
   });
+
+  it('fails closed in production when the webhook secret is unset', async () => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+    const previousNodeEnv = process.env.NODE_ENV;
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    try {
+      const response = await POST(
+        new Request(ENDPOINT, {
+          method: 'POST',
+          headers: { 'X-GitHub-Event': 'ping', 'Content-Type': 'application/json' },
+          body: '{"zen":"unsigned"}',
+        })
+      );
+      expect(response.status).toBe(503);
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = previousNodeEnv;
+      process.env.GITHUB_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    }
+  });
+
+  it('still accepts unsigned requests in development when the secret is unset', async () => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+    try {
+      const response = await POST(
+        new Request(ENDPOINT, {
+          method: 'POST',
+          headers: { 'X-GitHub-Event': 'ping', 'Content-Type': 'application/json' },
+          body: '{"zen":"local dev"}',
+        })
+      );
+      expect(response.status).toBe(200);
+    } finally {
+      process.env.GITHUB_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    }
+  });
 });
 
 describe('webhook event routing', () => {

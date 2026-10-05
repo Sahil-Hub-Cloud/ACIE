@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { run, get } from '../../../../lib/db';
+import { run, get, getDb } from '../../../../lib/db';
 import {
   calculateBlastRadiusInMemory,
   formatPRComment,
@@ -190,6 +190,66 @@ async function upsertPrComment(
   return 'created';
 }
 
+// ── Delivery deduplication ──────────────────────────────────────────────────
+
+const STALE_CLAIM_MS = 10 * 60 * 1000;
+
+function claimIsStale(receivedAt: string | null): boolean {
+  if (!receivedAt) return true;
+  const ms = Date.parse(receivedAt.includes('T') ? receivedAt : `${receivedAt.replace(' ', 'T')}Z`);
+  // Unparseable timestamps are treated as stale: reprocessing is idempotent
+  // (upserted analyses, upserted PR comment), dropping a delivery is not.
+  return Number.isNaN(ms) ? true : Date.now() - ms > STALE_CLAIM_MS;
+}
+
+/**
+ * Returns true when this delivery should be processed, false when an earlier
+ * attempt already completed (or is still running) for the same delivery id.
+ */
+async function claimDelivery(deliveryId: string, event: string): Promise<boolean> {
+  const inserted = await run(
+    `INSERT INTO webhook_deliveries (delivery_id, event, status, attempts)
+     VALUES (?, ?, 'processing', 1)
+     ON CONFLICT(delivery_id) DO NOTHING`,
+    [deliveryId, event]
+  );
+  if (inserted.rowsAffected > 0) return true;
+
+  const existing = await get<{ status: string; received_at: string | null }>(
+    'SELECT status, received_at FROM webhook_deliveries WHERE delivery_id = ?',
+    [deliveryId]
+  );
+  if (!existing) return true;
+  if (existing.status === 'completed') return false;
+  if (existing.status === 'processing' && !claimIsStale(existing.received_at)) return false;
+
+  // Failed, or a crashed run whose claim went stale — reclaim it.
+  await run(
+    `UPDATE webhook_deliveries
+        SET status = 'processing', attempts = attempts + 1, received_at = CURRENT_TIMESTAMP
+      WHERE delivery_id = ?`,
+    [deliveryId]
+  );
+  return true;
+}
+
+async function settleDelivery(
+  deliveryId: string,
+  status: 'completed' | 'failed',
+  lastError?: string
+): Promise<void> {
+  try {
+    await run(
+      `UPDATE webhook_deliveries
+          SET status = ?, last_error = ?, completed_at = CURRENT_TIMESTAMP
+        WHERE delivery_id = ?`,
+      [status, lastError ?? null, deliveryId]
+    );
+  } catch (error) {
+    console.error('[ACIE] Could not update delivery status:', (error as Error).message);
+  }
+}
+
 // ── Persistence ─────────────────────────────────────────────────────────────
 
 async function storeAnalysis(params: {
@@ -198,6 +258,7 @@ async function storeAnalysis(params: {
   prUrl: string;
   prTitle: string;
   prAuthor: string;
+  headSha: string | null;
   riskScore: number;
   riskLevel: string;
   changedFiles: string[];
@@ -206,39 +267,32 @@ async function storeAnalysis(params: {
   recommendations: string[];
 }) {
   try {
-    await run(
-      `CREATE TABLE IF NOT EXISTS analyses (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         repo_id INTEGER,
-         repo_full_name TEXT,
-         pr_number INTEGER NOT NULL,
-         pr_url TEXT NOT NULL,
-         pr_title TEXT,
-         pr_author TEXT,
-         risk_score INTEGER NOT NULL,
-         risk_level TEXT NOT NULL,
-         changed_files TEXT,
-         changed_symbols TEXT,
-         impacted_services TEXT,
-         blast_radius TEXT,
-         recommendations TEXT,
-         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-       )`
-    );
-
-    const repo = await get<{ id: number }>(
-      'SELECT id FROM repos WHERE owner || "/" || name = ? OR url LIKE ?',
-      [params.repoFullName, `%${params.repoFullName}%`]
-    );
+    const repo = await get<{ id: number }>('SELECT id FROM repos WHERE full_name = ?', [
+      params.repoFullName,
+    ]);
 
     const result = params.blastRadius as { impactedServices: unknown };
 
+    // Same PR head re-delivered (GitHub retry, manual redelivery) updates the
+    // existing row instead of duplicating it.
     await run(
       `INSERT INTO analyses (
          repo_id, repo_full_name, pr_number, pr_url, pr_title, pr_author,
          risk_score, risk_level, changed_files, changed_symbols,
-         impacted_services, blast_radius, recommendations
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         impacted_services, blast_radius, recommendations, head_sha
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(repo_full_name, pr_number, head_sha) DO UPDATE SET
+         repo_id = excluded.repo_id,
+         pr_url = excluded.pr_url,
+         pr_title = excluded.pr_title,
+         pr_author = excluded.pr_author,
+         risk_score = excluded.risk_score,
+         risk_level = excluded.risk_level,
+         changed_files = excluded.changed_files,
+         changed_symbols = excluded.changed_symbols,
+         impacted_services = excluded.impacted_services,
+         blast_radius = excluded.blast_radius,
+         recommendations = excluded.recommendations`,
       [
         repo?.id ?? null,
         params.repoFullName,
@@ -253,10 +307,11 @@ async function storeAnalysis(params: {
         JSON.stringify(result.impactedServices),
         JSON.stringify(params.blastRadius),
         JSON.stringify(params.recommendations),
+        params.headSha,
       ]
     );
   } catch (error) {
-    console.warn('[ACIE] Analysis not persisted:', (error as Error).message);
+    console.error('[ACIE] Analysis not persisted:', (error as Error).message);
   }
 }
 
@@ -265,18 +320,6 @@ async function storeInstallation(payload: any, removed: boolean) {
   if (!installationId) return;
 
   try {
-    await run(
-      `CREATE TABLE IF NOT EXISTS installations (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         installation_id INTEGER NOT NULL UNIQUE,
-         account_login TEXT,
-         account_type TEXT,
-         repository_count INTEGER DEFAULT 0,
-         setup_action TEXT,
-         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-       )`
-    );
     await run(
       `INSERT INTO installations (installation_id, account_login, account_type, repository_count, setup_action)
        VALUES (?, ?, ?, ?, ?)
@@ -295,7 +338,7 @@ async function storeInstallation(payload: any, removed: boolean) {
       ]
     );
   } catch (error) {
-    console.warn('[ACIE] Installation not persisted:', (error as Error).message);
+    console.error('[ACIE] Installation not persisted:', (error as Error).message);
   }
 }
 
@@ -308,15 +351,20 @@ export async function POST(req: Request) {
   const event = req.headers.get('x-github-event') ?? 'unknown';
   const delivery = req.headers.get('x-github-delivery');
 
-  // Unsigned requests are only tolerated while the secret is unset (local dev).
   if (webhookSecret) {
     const signature = req.headers.get('x-hub-signature-256');
     if (!verifySignature(rawBody, signature, webhookSecret)) {
       console.warn(`[ACIE] Rejected webhook ${delivery}: signature mismatch`);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    // Fail closed: an unsigned webhook is indistinguishable from a forgery.
+    console.error(
+      '[ACIE] GITHUB_WEBHOOK_SECRET is unset in production — refusing to process webhooks.'
+    );
+    return NextResponse.json({ error: 'Webhook processing is not configured' }, { status: 503 });
   } else {
-    console.warn('[ACIE] GITHUB_WEBHOOK_SECRET is unset — accepting an unsigned webhook.');
+    console.warn('[ACIE] GITHUB_WEBHOOK_SECRET is unset — accepting an unsigned webhook (development only).');
   }
 
   let payload: any;
@@ -328,7 +376,47 @@ export async function POST(req: Request) {
 
   const dryRun = new URL(req.url).searchParams.get('dryRun') === '1';
 
+  // Delivery dedup — only meaningful once a database backs it.
+  let deliveryClaimed = false;
+  if (delivery && !dryRun && getDb()) {
+    try {
+      deliveryClaimed = await claimDelivery(delivery, event);
+    } catch (error) {
+      console.error('[ACIE] Delivery claim failed:', (error as Error).message);
+      deliveryClaimed = true; // better a duplicate than a dropped delivery
+    }
+    if (!deliveryClaimed) {
+      return NextResponse.json({ ok: true, duplicate: true, event, delivery });
+    }
+  }
+
   try {
+    const response = await processEvent(payload, event, dryRun, delivery);
+    if (deliveryClaimed && delivery) {
+      await settleDelivery(
+        delivery,
+        response.status >= 500 ? 'failed' : 'completed',
+        response.status >= 500 ? `responded ${response.status}` : undefined
+      );
+    }
+    return response;
+  } catch (error) {
+    console.error('[ACIE] Webhook error:', error);
+    if (deliveryClaimed && delivery) {
+      await settleDelivery(delivery, 'failed', (error as Error).message);
+    }
+    // Never echo internals to the caller; the full error is logged above.
+    return NextResponse.json({ ok: false, error: 'Internal error processing webhook' }, { status: 500 });
+  }
+}
+
+async function processEvent(
+  payload: any,
+  event: string,
+  dryRun: boolean,
+  delivery: string | null
+): Promise<NextResponse> {
+  {
     // GitHub sends this when you save the webhook — answering it proves liveness.
     if (event === 'ping') {
       return NextResponse.json({ ok: true, event, zen: payload.zen ?? null, dryRun });
@@ -415,6 +503,7 @@ export async function POST(req: Request) {
         prUrl: pr.html_url,
         prTitle: pr.title,
         prAuthor: pr.user?.login ?? 'unknown',
+        headSha: pr.head?.sha ?? null,
         riskScore: result.riskScore,
         riskLevel: result.riskLevel,
         changedFiles: filenames,
@@ -441,12 +530,6 @@ export async function POST(req: Request) {
       comment: commentAction,
       commentPreview: dryRun ? comment : undefined,
     });
-  } catch (error) {
-    console.error('[ACIE] Webhook error:', error);
-    return NextResponse.json(
-      { ok: false, error: (error as Error).message },
-      { status: 500 }
-    );
   }
 }
 

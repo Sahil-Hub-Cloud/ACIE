@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { run, get } from '../../../../lib/db';
+import { readCookie, setSessionCookie } from '../../../../lib/session';
 import type { User } from '../../../../lib/types';
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -11,16 +12,6 @@ const GITHUB_CLIENT_ID =
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 const OAUTH_STATE_COOKIE = 'acie_oauth_state';
-
-function readCookie(req: Request, name: string): string | undefined {
-  const header = req.headers.get('cookie');
-  if (!header) return undefined;
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) return rest.join('=');
-  }
-  return undefined;
-}
 
 function clearStateCookie(res: NextResponse) {
   res.cookies.set(OAUTH_STATE_COOKIE, '', {
@@ -112,7 +103,7 @@ export async function POST(req: Request) {
       if (!user) {
         await run(
           `INSERT INTO users (github_id, username, email, avatar_url, role)
-           VALUES (?, ?, ?, ?, 'admin')`,
+           VALUES (?, ?, ?, ?, 'developer')`,
           [githubUser.id, githubUser.login, githubUser.email, githubUser.avatar_url]
         );
         user = await get<User>('SELECT * FROM users WHERE github_id = ?', [githubUser.id]);
@@ -129,19 +120,21 @@ export async function POST(req: Request) {
         username: githubUser.login,
         email: githubUser.email,
         avatarUrl: githubUser.avatar_url,
-        role: 'admin',
+        role: 'developer',
         createdAt: new Date().toISOString(),
       } as User;
     }
 
-    // 4. Generate JWT
+    // 4. Generate the session JWT and hand it over as an httpOnly cookie so
+    //    client-side script can never read or exfiltrate it.
     const token = jwt.sign(
       { userId: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    const response = NextResponse.json({ token, user });
+    const response = NextResponse.json({ user });
+    setSessionCookie(response, token);
     clearStateCookie(response);
     return response;
   } catch (error) {

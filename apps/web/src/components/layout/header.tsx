@@ -9,7 +9,17 @@ export default function Header({ onOpenSidebar, title }: { onOpenSidebar: () => 
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    setUser(ApiClient.getPayload());
+    let stale = false;
+    ApiClient.me()
+      .then((u) => {
+        if (!stale) setUser(u);
+      })
+      .catch(() => {
+        // middleware already guards the route; keep the header anonymous
+      });
+    return () => {
+      stale = true;
+    };
   }, []);
 
   return (
@@ -24,26 +34,19 @@ export default function Header({ onOpenSidebar, title }: { onOpenSidebar: () => 
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center gap-4 text-xs font-bold">
-          <span className="text-emerald-500 flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/10">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-            AGENTS ONLINE
-          </span>
-        </div>
-
         {user && (
           <div className="flex items-center gap-2">
             {user.avatarUrl ? (
               <Image
                 src={user.avatarUrl}
-                alt={user.username}
+                alt={user.username ?? 'user'}
                 width={32}
                 height={32}
                 className="w-8 h-8 rounded-full border border-white/10"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-xs uppercase">
-                {user.username.slice(0, 2)}
+                {(user.username ?? '').slice(0, 2)}
               </div>
             )}
             <span className="hidden md:inline text-xs font-bold text-slate-300">{user.username}</span>

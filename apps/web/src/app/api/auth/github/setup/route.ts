@@ -28,9 +28,13 @@ export async function GET(req: Request) {
   let accountLogin: string | null = null;
   let accountType: string | null = null;
   let repositoryCount = 0;
+  // Only an installation GitHub itself acknowledges may be persisted; the
+  // setup URL is unauthenticated, so the app-JWT token mint is our proof.
+  let verified = false;
 
   try {
     const token = await getInstallationToken(installationId);
+    verified = true;
     const response = await fetch(`https://api.github.com/installation/repositories`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -51,20 +55,14 @@ export async function GET(req: Request) {
     console.warn('[ACIE] Could not read installation details:', (error as Error).message);
   }
 
+  if (!verified) {
+    destination.searchParams.set('setup', 'unverified');
+    destination.searchParams.set('installation_id', String(installationId));
+    return NextResponse.redirect(destination.toString());
+  }
+
   // Best-effort persistence; the app works without a database.
   try {
-    await run(
-      `CREATE TABLE IF NOT EXISTS installations (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         installation_id INTEGER NOT NULL UNIQUE,
-         account_login TEXT,
-         account_type TEXT,
-         repository_count INTEGER DEFAULT 0,
-         setup_action TEXT,
-         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-       )`
-    );
     await run(
       `INSERT INTO installations (installation_id, account_login, account_type, repository_count, setup_action)
        VALUES (?, ?, ?, ?, ?)

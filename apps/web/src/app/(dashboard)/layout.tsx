@@ -1,34 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Sidebar from '../../components/layout/sidebar';
 import Header from '../../components/layout/header';
-import { ApiClient } from '../../lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  // Route protection lives in middleware (httpOnly session cookie); this
+  // layout only owns the chrome.
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
-
-  useEffect(() => {
-    const token = ApiClient.getToken();
-    if (!token) {
-      router.push('/login');
-    } else {
-      setAuthorized(true);
-    }
-  }, [router]);
-
-  if (!authorized) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <span className="text-xs text-slate-500 font-mono tracking-wider animate-pulse">
-          Syncing secure keys...
-        </span>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg text-[#f8fafc]">

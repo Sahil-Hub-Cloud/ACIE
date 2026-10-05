@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ApiClient } from '../lib/api';
 import {
   Shield,
   Zap,
@@ -18,13 +19,13 @@ import {
 
 export default function LandingPage() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // If already logged in, redirect to dashboard
-    const token = localStorage?.getItem('acie_token');
-    if (token) router.push('/repos');
+    // If already signed in, go straight to the dashboard. A 401 just means
+    // "show the landing page" — never bounce visitors to /login.
+    ApiClient.me({ redirectOn401: false })
+      .then(() => router.push('/repos'))
+      .catch(() => {});
   }, [router]);
 
   const handleGetStarted = () => {
