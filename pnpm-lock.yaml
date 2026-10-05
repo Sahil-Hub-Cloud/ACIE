@@ -36,6 +36,9 @@ importers:
         specifier: ^3.20.0
         version: 3.36.0
     devDependencies:
+      '@acie/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/config/eslint-config
       '@acie/typescript-config':
         specifier: workspace:*
         version: link:../../packages/config/typescript-config
@@ -45,6 +48,15 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.21.0
+        version: 6.21.0(eslint@8.57.1)(typescript@5.9.3)
+      eslint:
+        specifier: ^8.57.1
+        version: 8.57.1
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.26)(tsx@4.23.12)(typescript@5.9.3)
@@ -104,6 +116,9 @@ importers:
         specifier: ^4.5.2
         version: 4.5.7(@types/react@18.3.31)(react@18.3.1)
     devDependencies:
+      '@acie/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/config/eslint-config
       '@acie/typescript-config':
         specifier: workspace:*
         version: link:../../packages/config/typescript-config
@@ -119,9 +134,18 @@ importers:
       '@types/react-dom':
         specifier: ^18.2.0
         version: 18.3.7(@types/react@18.3.31)
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.21.0
+        version: 6.21.0(eslint@8.57.1)(typescript@5.9.3)
       autoprefixer:
         specifier: ^10.4.19
         version: 10.5.4(postcss@8.5.26)
+      eslint:
+        specifier: ^8.57.1
+        version: 8.57.1
       postcss:
         specifier: ^8.4.38
         version: 8.5.26
@@ -151,9 +175,21 @@ importers:
 
   packages/shared:
     devDependencies:
+      '@acie/eslint-config':
+        specifier: workspace:*
+        version: link:../config/eslint-config
       '@acie/typescript-config':
         specifier: workspace:*
         version: link:../config/typescript-config
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.21.0
+        version: 6.21.0(eslint@8.57.1)(typescript@5.9.3)
+      eslint:
+        specifier: ^8.57.1
+        version: 8.57.1
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
