@@ -7,17 +7,21 @@ import { spinner, logger } from '../utils/logger';
 import { resolveImport } from './symbol-resolver';
 
 // Tree-sitter is loaded lazily to handle optional native binary
-let Parser: typeof import('tree-sitter') | null = null;
+let parserInstance: InstanceType<typeof import('tree-sitter')> | null = null;
 let TypeScript: unknown = null;
 
 async function loadTreeSitter() {
-  if (Parser) return { Parser, TypeScript };
+  if (parserInstance) return { Parser: parserInstance, TypeScript };
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    Parser = require('tree-sitter');
+    const ParserCtor = require('tree-sitter') as typeof import('tree-sitter');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    TypeScript = require('tree-sitter-typescript').typescript;
-    return { Parser, TypeScript };
+    const tsLang = (require('tree-sitter-typescript') as { typescript: unknown }).typescript;
+    const instance = new ParserCtor();
+    instance.setLanguage(tsLang);
+    parserInstance = instance;
+    TypeScript = tsLang;
+    return { Parser: parserInstance, TypeScript };
   } catch {
     logger.warn('tree-sitter not available — falling back to regex parser');
     return { Parser: null, TypeScript: null };
@@ -26,7 +30,7 @@ async function loadTreeSitter() {
 
 // ── Regex fallback parser (works without native binary) ─────────────────────
 
-interface ParseResult {
+export interface ParseResult {
   symbols: Array<{
     symbolName: string;
     symbolKind: string;
@@ -39,7 +43,7 @@ interface ParseResult {
   }>;
 }
 
-function parseFileRegex(filePath: string, content: string): ParseResult {
+export function parseFileRegex(filePath: string, content: string, rootPath: string): ParseResult {
   const symbols: ParseResult['symbols'] = [];
   const imports: ParseResult['imports'] = [];
   const lines = content.split('\n');
@@ -80,7 +84,7 @@ function parseFileRegex(filePath: string, content: string): ParseResult {
   let match: RegExpExecArray | null;
   while ((match = importRegex.exec(content)) !== null) {
     const specifier = match[1];
-    const resolved = resolveImport(filePath, specifier, path.dirname(filePath));
+    const resolved = resolveImport(filePath, specifier, rootPath);
     if (resolved) {
       imports.push({ targetFile: resolved, edgeType: 'imports' });
     }
@@ -91,56 +95,77 @@ function parseFileRegex(filePath: string, content: string): ParseResult {
 
 // ── Tree-sitter AST parser ───────────────────────────────────────────────────
 
-function parseFileAST(filePath: string, content: string, parser: typeof import('tree-sitter'), tsLang: unknown): ParseResult {
+export function parseFileAST(
+  filePath: string,
+  content: string,
+  parser: InstanceType<typeof import('tree-sitter')>,
+  tsLang: unknown,
+  rootPath: string
+): ParseResult {
   const symbols: ParseResult['symbols'] = [];
   const imports: ParseResult['imports'] = [];
 
+  type TSNode = import('tree-sitter').SyntaxNode;
+
+  const pushSymbol = (nameNode: TSNode, kind: string, row: number, isExported: boolean): void => {
+    symbols.push({ symbolName: nameNode.text, symbolKind: kind, lineNumber: row, isExported });
+  };
+
+  const addImportEdge = (sourceNode: TSNode | null): void => {
+    if (!sourceNode) return;
+    const specifier = sourceNode.text.replace(/['"]/g, '');
+    const resolved = resolveImport(filePath, specifier, rootPath);
+    if (resolved) imports.push({ targetFile: resolved, edgeType: 'imports' });
+  };
+
+  const recordDeclaration = (decl: TSNode, isExported: boolean): void => {
+    const nameNode = decl.childForFieldName('name');
+    if (nameNode) {
+      pushSymbol(nameNode, mapKind(decl.type), decl.startPosition.row + 1, isExported);
+      return;
+    }
+    // const/let/var declarations have no name field — names live on variable_declarator children
+    if (decl.type === 'lexical_declaration' || decl.type === 'variable_declaration') {
+      for (const child of decl.children) {
+        if (child.type === 'variable_declarator') {
+          const declaratorName = child.childForFieldName('name');
+          if (declaratorName) pushSymbol(declaratorName, 'const', child.startPosition.row + 1, isExported);
+        }
+      }
+    }
+  };
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (parser as any).setLanguage(tsLang);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tree = (parser as any).parse(content);
+    parser.setLanguage(tsLang);
+    const tree = parser.parse(content);
     const root = tree.rootNode;
 
-    function walk(node: any) {
+    const walk = (node: TSNode): void => {
       switch (node.type) {
         case 'export_statement': {
           const decl = node.childForFieldName('declaration');
           if (decl) {
-            const nameNode = decl.childForFieldName('name');
-            if (nameNode) {
-              const kind = decl.type.replace('_declaration', '').replace('_definition', '');
-              symbols.push({
-                symbolName: nameNode.text,
-                symbolKind: mapKind(kind),
-                lineNumber: node.startPosition.row + 1,
-                isExported: true,
-              });
+            // Record the exported declaration here, then walk only its body so the
+            // bare function/class declaration cases below don't record it a second time.
+            recordDeclaration(decl, true);
+            for (const child of decl.children) {
+              if (child) walk(child);
             }
+            return;
           }
-          break;
+          // export { x } from './y' / export * from './y' — edge, not a new local symbol
+          addImportEdge(node.childForFieldName('source'));
+          return;
         }
         case 'import_statement': {
-          const src = node.childForFieldName('source');
-          if (src) {
-            const specifier = src.text.replace(/['"]/g, '');
-            const resolved = resolveImport(filePath, specifier, path.dirname(filePath));
-            if (resolved) {
-              imports.push({ targetFile: resolved, edgeType: 'imports' });
-            }
-          }
+          addImportEdge(node.childForFieldName('source'));
           break;
         }
         case 'function_declaration':
         case 'class_declaration': {
           const nameNode = node.childForFieldName('name');
           if (nameNode) {
-            symbols.push({
-              symbolName: nameNode.text,
-              symbolKind: node.type.includes('function') ? 'function' : 'class',
-              lineNumber: node.startPosition.row + 1,
-              isExported: false,
-            });
+            pushSymbol(nameNode, node.type.includes('function') ? 'function' : 'class', node.startPosition.row + 1, false);
           }
           break;
         }
@@ -148,12 +173,12 @@ function parseFileAST(filePath: string, content: string, parser: typeof import('
       for (const child of node.children) {
         if (child) walk(child);
       }
-    }
+    };
 
     walk(root);
-  } catch {
-    // Fallback silently
-    return parseFileRegex(filePath, content);
+  } catch (err) {
+    logger.warn(`AST parse failed for ${path.relative(rootPath, filePath)}, using regex fallback: ${err instanceof Error ? err.message : String(err)}`);
+    return parseFileRegex(filePath, content, rootPath);
   }
 
   return { symbols, imports };
@@ -210,10 +235,9 @@ export async function buildGraph(rootPath: string, dbPath: string): Promise<void
 
       let result: ParseResult;
       if (parser && tsLang && filePath.match(/\.(ts|tsx|js|jsx)$/)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = parseFileAST(filePath, content, parser as any, tsLang);
+        result = parseFileAST(filePath, content, parser, tsLang, rootPath);
       } else {
-        result = parseFileRegex(filePath, content);
+        result = parseFileRegex(filePath, content, rootPath);
       }
 
       // Accumulate nodes
@@ -252,8 +276,8 @@ export async function buildGraph(rootPath: string, dbPath: string): Promise<void
       if (processed % 100 === 0) {
         spin.text = `Parsed ${processed}/${files.length} files...`;
       }
-    } catch {
-      // Skip unparseable files silently
+    } catch (err) {
+      logger.warn(`Skipping unparseable file ${path.relative(rootPath, filePath)}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -287,10 +311,9 @@ export async function updateFileInGraph(
 
   let result: ParseResult;
   if (parser && tsLang && filePath.match(/\.(ts|tsx|js|jsx)$/)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result = parseFileAST(filePath, content, parser as any, tsLang);
+    result = parseFileAST(filePath, content, parser, tsLang, rootPath);
   } else {
-    result = parseFileRegex(filePath, content);
+    result = parseFileRegex(filePath, content, rootPath);
   }
 
   NodeQueries.insertBatch(db, result.symbols.map(s => ({

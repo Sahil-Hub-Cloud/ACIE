@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import * as path from 'path';
 import { getChangedFilesFromPR, getFilePatch } from '../utils/git';
 import { analyzeChangedFiles } from '../core/diff-analyzer';
-import { calculateBlastRadius, formatPRComment } from '../core/blast-radius';
+import { calculateBlastRadius } from '../core/blast-radius';
 import { getDb, closeDb, AnalysisQueries } from '../utils/db';
 import { logger, formatRisk, formatScore } from '../utils/logger';
 

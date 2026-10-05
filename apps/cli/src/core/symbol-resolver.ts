@@ -87,7 +87,7 @@ function resolveAlias(specifier: string, rootPath: string, tsConfig: TsConfig): 
 function resolvePackage(specifier: string, importerFile: string): string | null {
   // Find the nearest node_modules
   let dir = path.dirname(importerFile);
-  while (true) {
+  for (;;) {
     const nodeModulesPath = path.join(dir, 'node_modules', specifier);
     
     if (fs.existsSync(nodeModulesPath)) {

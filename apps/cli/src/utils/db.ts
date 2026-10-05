@@ -81,6 +81,12 @@ CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source_file);
 CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(target_file);
 CREATE INDEX IF NOT EXISTS idx_analyses_repo ON analyses(repo_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_risk ON analyses(risk_level);
+
+-- Collapse duplicates written before uniqueness was enforced, then enforce it
+DELETE FROM nodes WHERE id NOT IN (SELECT MIN(id) FROM nodes GROUP BY file_path, symbol_name);
+DELETE FROM edges WHERE id NOT IN (SELECT MIN(id) FROM edges GROUP BY source_file, target_file, edge_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_unique ON nodes(file_path, symbol_name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edges_unique ON edges(source_file, target_file, edge_type);
 `;
 
 let _db: Database.Database | null = null;
@@ -124,7 +130,10 @@ export const NodeQueries = {
       VALUES (@filePath, @symbolName, @symbolKind, @lineNumber, @isExported)
     `);
     const insertMany = db.transaction((rows: typeof nodes) => {
-      for (const row of rows) insert.run(row);
+      for (const row of rows) {
+        // better-sqlite3 rejects JS booleans — bind 0/1 for the BOOLEAN column.
+        insert.run({ ...row, isExported: row.isExported ? 1 : 0 });
+      }
     });
     insertMany(nodes);
   },
