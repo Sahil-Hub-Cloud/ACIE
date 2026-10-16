@@ -259,14 +259,33 @@ async function storeAnalysis(params: {
   prTitle: string;
   prAuthor: string;
   headSha: string | null;
+  prUpdatedAt: string | null;
   riskScore: number;
   riskLevel: string;
-  changedFiles: string[];
+  changedFiles: Array<{ filename: string; status: string; additions: number; deletions: number }>;
   changedSymbols: ChangedSymbol[];
   blastRadius: unknown;
   recommendations: string[];
-}) {
+}): Promise<'stored' | 'stale'> {
   try {
+    // Out-of-order guard: deliveries can arrive after a newer head was already
+    // stored. ISO-8601 timestamps from GitHub compare correctly as strings.
+    const latest = await get<{ pr_updated_at: string | null }>(
+      'SELECT pr_updated_at FROM analyses WHERE repo_full_name = ? AND pr_number = ? ORDER BY id DESC LIMIT 1',
+      [params.repoFullName, params.prNumber]
+    );
+    if (
+      latest?.pr_updated_at &&
+      params.prUpdatedAt &&
+      params.prUpdatedAt < latest.pr_updated_at
+    ) {
+      console.warn(
+        `[ACIE] Dropping stale analysis for ${params.repoFullName}#${params.prNumber}: ` +
+          `${params.prUpdatedAt} < stored ${latest.pr_updated_at}`
+      );
+      return 'stale';
+    }
+
     const repo = await get<{ id: number }>('SELECT id FROM repos WHERE full_name = ?', [
       params.repoFullName,
     ]);
@@ -279,8 +298,8 @@ async function storeAnalysis(params: {
       `INSERT INTO analyses (
          repo_id, repo_full_name, pr_number, pr_url, pr_title, pr_author,
          risk_score, risk_level, changed_files, changed_symbols,
-         impacted_services, blast_radius, recommendations, head_sha
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         impacted_services, blast_radius, recommendations, head_sha, pr_updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(repo_full_name, pr_number, head_sha) DO UPDATE SET
          repo_id = excluded.repo_id,
          pr_url = excluded.pr_url,
@@ -292,7 +311,8 @@ async function storeAnalysis(params: {
          changed_symbols = excluded.changed_symbols,
          impacted_services = excluded.impacted_services,
          blast_radius = excluded.blast_radius,
-         recommendations = excluded.recommendations`,
+         recommendations = excluded.recommendations,
+         pr_updated_at = excluded.pr_updated_at`,
       [
         repo?.id ?? null,
         params.repoFullName,
@@ -308,10 +328,43 @@ async function storeAnalysis(params: {
         JSON.stringify(params.blastRadius),
         JSON.stringify(params.recommendations),
         params.headSha,
+        params.prUpdatedAt,
+      ]
+    );
+    return 'stored';
+  } catch (error) {
+    console.error('[ACIE] Analysis not persisted:', (error as Error).message);
+    return 'stored';
+  }
+}
+
+/**
+ * Register (or refresh) the repository behind a delivery so it appears in the
+ * dashboard and becomes the tenancy anchor for its analyses.
+ */
+async function upsertRepoFromPayload(payload: any): Promise<void> {
+  const repo = payload?.repository;
+  const fullName: string | undefined = repo?.full_name;
+  if (!fullName) return;
+  try {
+    await run(
+      `INSERT INTO repos (installation_id, owner, name, full_name, url, default_branch)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(full_name) DO UPDATE SET
+         installation_id = COALESCE(excluded.installation_id, repos.installation_id),
+         url = excluded.url,
+         default_branch = excluded.default_branch`,
+      [
+        payload.installation?.id ?? null,
+        repo.owner?.login ?? fullName.split('/')[0] ?? null,
+        repo.name ?? fullName.split('/')[1] ?? null,
+        fullName,
+        repo.html_url ?? null,
+        repo.default_branch ?? null,
       ]
     );
   } catch (error) {
-    console.error('[ACIE] Analysis not persisted:', (error as Error).message);
+    console.error('[ACIE] Repository not registered:', (error as Error).message);
   }
 }
 
@@ -339,6 +392,26 @@ async function storeInstallation(payload: any, removed: boolean) {
     );
   } catch (error) {
     console.error('[ACIE] Installation not persisted:', (error as Error).message);
+  }
+
+  // First claim wins: bind the installation to the authenticated user whose
+  // GitHub identity performed the install (identities migrate over with the
+  // account, so this stays valid across OAuth migrations).
+  if (!removed && payload.sender?.id) {
+    try {
+      const sender = await get<{ id: number }>(
+        'SELECT id FROM users WHERE github_id = ?',
+        [payload.sender.id]
+      );
+      if (sender) {
+        await run(
+          'UPDATE installations SET setup_user_id = ? WHERE installation_id = ? AND setup_user_id IS NULL',
+          [sender.id, installationId]
+        );
+      }
+    } catch (error) {
+      console.warn('[ACIE] Installation claim skipped:', (error as Error).message);
+    }
   }
 }
 
@@ -458,15 +531,36 @@ async function processEvent(
     }
 
     const token = await resolveRepoToken(owner, repoName, installationId);
+    if (!token) {
+      // Fail closed: with the GitHub App configured there is no installation
+      // token for this repo, and the broad operator PAT is never substituted.
+      return NextResponse.json(
+        {
+          error:
+            'GitHub credentials unavailable for this repository (no installation token; PAT fallback is disabled when the GitHub App is configured).',
+        },
+        { status: 503 }
+      );
+    }
 
     // Changed files, paginated (GitHub caps this endpoint at 3000 files).
-    const files: Array<{ filename: string; patch?: string }> = [];
+    const files: Array<{
+      filename: string;
+      status?: string;
+      additions?: number;
+      deletions?: number;
+      patch?: string;
+    }> = [];
     for (let page = 1; page <= MAX_FILE_PAGES; page++) {
-      const batch = await githubFetch<Array<{ filename: string; patch?: string }>>(
-        `/repos/${repoFullName}/pulls/${prNumber}/files?per_page=100&page=${page}`,
-        {},
-        token
-      );
+      const batch = await githubFetch<
+        Array<{
+          filename: string;
+          status?: string;
+          additions?: number;
+          deletions?: number;
+          patch?: string;
+        }>
+      >(`/repos/${repoFullName}/pulls/${prNumber}/files?per_page=100&page=${page}`, {}, token);
       files.push(...batch);
       if (batch.length < 100) break;
     }
@@ -496,21 +590,30 @@ async function processEvent(
       }
     }
 
+    let analysisStored = true;
     if (!dryRun) {
-      await storeAnalysis({
-        repoFullName,
-        prNumber,
-        prUrl: pr.html_url,
-        prTitle: pr.title,
-        prAuthor: pr.user?.login ?? 'unknown',
-        headSha: pr.head?.sha ?? null,
-        riskScore: result.riskScore,
-        riskLevel: result.riskLevel,
-        changedFiles: filenames,
-        changedSymbols,
-        blastRadius: result,
-        recommendations: result.recommendations,
-      });
+      await upsertRepoFromPayload(payload);
+      analysisStored =
+        (await storeAnalysis({
+          repoFullName,
+          prNumber,
+          prUrl: pr.html_url,
+          prTitle: pr.title,
+          prAuthor: pr.user?.login ?? 'unknown',
+          headSha: pr.head?.sha ?? null,
+          prUpdatedAt: pr.updated_at ?? null,
+          riskScore: result.riskScore,
+          riskLevel: result.riskLevel,
+          changedFiles: changedFiles.map((file) => ({
+            filename: file.filename,
+            status: file.status ?? 'modified',
+            additions: file.additions ?? 0,
+            deletions: file.deletions ?? 0,
+          })),
+          changedSymbols,
+          blastRadius: result,
+          recommendations: result.recommendations,
+        })) === 'stored';
     }
 
     return NextResponse.json({
@@ -527,6 +630,7 @@ async function processEvent(
       impactedFiles: result.totalImpactedFiles,
       impactedServices: result.impactedServices.map((service) => service.name),
       entryPointsAffected: result.entryPointsAffected,
+      analysisStored,
       comment: commentAction,
       commentPreview: dryRun ? comment : undefined,
     });
@@ -540,7 +644,9 @@ export async function GET() {
     version: '2.1',
     signatureVerification: Boolean(process.env.GITHUB_WEBHOOK_SECRET),
     githubApp: isGitHubAppConfigured(),
-    patFallback: Boolean(process.env.GITHUB_TOKEN),
+    // PAT fallback only applies when the app is not configured; with the app
+    // configured the operator PAT is never substituted for installation scope.
+    patFallback: !isGitHubAppConfigured() && Boolean(process.env.GITHUB_TOKEN),
     hints: 'POST pull_request events here. Add ?dryRun=1 to preview without commenting.',
   });
 }

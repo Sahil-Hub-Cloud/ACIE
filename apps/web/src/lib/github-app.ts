@@ -138,8 +138,14 @@ export async function getRepoInstallationId(
 }
 
 /**
- * Pick the best credential for reading a repo:
- * known installation -> the app's installation for that repo -> PAT fallback.
+ * Pick the best credential for reading a repo.
+ *
+ * - App configured: the repo's installation token, or null when the app has
+ *   no installation for the repo / the mint fails. The broad `GITHUB_TOKEN`
+ *   PAT is deliberately NOT substituted here — in customer-facing production
+ *   paths a scoping bug must fail visibly instead of silently reading with
+ *   the operator's account.
+ * - App not configured (CLI/local mode): the PAT.
  */
 export async function resolveRepoToken(
   owner: string,
@@ -150,9 +156,15 @@ export async function resolveRepoToken(
     try {
       const id = installationId ?? (await getRepoInstallationId(owner, repo));
       if (id) return await getInstallationToken(id);
+      console.warn(
+        `[ACIE] No installation for ${owner}/${repo} — refusing PAT fallback.`
+      );
     } catch (error) {
-      console.warn('[ACIE] Falling back to GITHUB_TOKEN:', (error as Error).message);
+      console.warn(
+        `[ACIE] Installation token unavailable for ${owner}/${repo}: ${(error as Error).message} — refusing PAT fallback.`
+      );
     }
+    return null;
   }
   return process.env.GITHUB_TOKEN || null;
 }

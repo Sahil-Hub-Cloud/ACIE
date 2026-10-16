@@ -25,7 +25,6 @@ export default function ReposPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await addRepo({
-      githubId: Math.floor(Math.random() * 1000000), // mock GitHub ID for local registry
       ...formData,
     });
     setFormData({

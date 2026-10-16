@@ -70,7 +70,7 @@ export class ApiClient {
     return this.request(`/api/repos/${id}`);
   }
 
-  static async addRepo(data: { githubId: number; name: string; owner: string; url: string; language: string; isMonorepo?: boolean; monorepoTool?: string }) {
+  static async addRepo(data: { name: string; owner: string; url: string; language: string; isMonorepo?: boolean; monorepoTool?: string }) {
     return this.request('/api/repos', {
       method: 'POST',
       body: JSON.stringify(data),

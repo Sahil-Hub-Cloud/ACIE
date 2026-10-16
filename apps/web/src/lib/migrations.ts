@@ -114,6 +114,23 @@ const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    id: '0002_tenancy_and_repo_fields',
+    async up(db) {
+      // Which authenticated user claimed this installation (setup binding).
+      await addColumnIfMissing(db, 'installations', 'setup_user_id', 'INTEGER');
+      // Repo fields the dashboard renders. `language` is nullable: webhook rows
+      // have no honest language until someone states one (UI shows "Unknown").
+      await addColumnIfMissing(db, 'repos', 'language', 'TEXT');
+      await addColumnIfMissing(db, 'repos', 'is_monorepo', `INTEGER NOT NULL DEFAULT 0`);
+      await addColumnIfMissing(db, 'repos', 'monorepo_tool', 'TEXT');
+      // Manually registered repos are scoped to the user who created them.
+      await addColumnIfMissing(db, 'repos', 'created_by_user_id', 'INTEGER');
+      // PR updated_at guards against out-of-order deliveries overwriting
+      // results for a newer head.
+      await addColumnIfMissing(db, 'analyses', 'pr_updated_at', 'TEXT');
+    },
+  },
 ];
 
 export async function applyMigrations(db: Client): Promise<void> {

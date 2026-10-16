@@ -56,6 +56,12 @@ function LoginContent() {
           // Malformed percent-encoding — keep the default destination.
         }
       }
+      // API destinations (e.g. the installation setup callback) are route
+      // handlers, not pages — a full navigation is required for them.
+      if (next.startsWith('/api/')) {
+        window.location.href = next;
+        return;
+      }
       router.replace(next);
     } catch (err) {
       setError((err as Error).message || 'GitHub authentication failed');
@@ -66,7 +72,12 @@ function LoginContent() {
   const triggerGithubOAuth = () => {
     setError(null);
     // Server route builds the authorize URL, so no build-time public env var is needed.
-    window.location.href = '/api/auth/github/authorize';
+    // Carry `next` through so post-login return (e.g. installation setup) survives;
+    // the authorize route re-validates it as same-origin.
+    const next = searchParams.get('next');
+    window.location.href = next
+      ? `/api/auth/github/authorize?next=${encodeURIComponent(next)}`
+      : '/api/auth/github/authorize';
   };
 
   return (
