@@ -53,7 +53,7 @@ export default function BlastRadiusView({ blastRadius }: BlastRadiusViewProps) {
       <div className="glass p-6 rounded-2xl">
         <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
           <Network className="w-4 h-4 text-indigo-400" />
-          Downstream Dependents Tree ({blastRadius.totalImpactedFiles} Files)
+          Downstream Dependents Tree ({Number(blastRadius.totalImpactedFiles) || 0} Files)
         </h4>
 
         {chain.length === 0 ? (

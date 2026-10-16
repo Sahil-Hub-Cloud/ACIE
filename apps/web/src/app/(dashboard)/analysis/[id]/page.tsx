@@ -5,7 +5,6 @@ import { useAnalysis } from '../../../../hooks/use-analysis';
 import RiskScoreBadge from '../../../../components/analysis/risk-score-badge';
 import BlastRadiusView from '../../../../components/analysis/blast-radius-view';
 import { Loader2, AlertCircle, Calendar, ExternalLink, FileCode, CheckSquare, GitPullRequest } from 'lucide-react';
-import Link from 'next/link';
 
 export default function AnalysisDetailPage({ params }: { params: { id: string } }) {
   const analysisId = parseInt(params.id, 10);

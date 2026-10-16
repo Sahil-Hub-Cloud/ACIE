@@ -42,12 +42,25 @@ function LoginContent() {
     setStatus('Establishing secure auth token...');
     try {
       await ApiClient.login(code, state);
-      // The state carries the page the user originally wanted.
+      // The state carries the page the user originally wanted. Re-validate it
+      // here: the state comes back from GitHub and must stay same-origin.
       let next = '/repos';
       const encoded = state?.split(':')[1];
       if (encoded) {
-        const decoded = decodeURIComponent(encoded);
-        if (decoded.startsWith('/')) next = decoded;
+        try {
+          const decoded = decodeURIComponent(encoded);
+          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) {
+            next = decoded;
+          }
+        } catch {
+          // Malformed percent-encoding — keep the default destination.
+        }
+      }
+      // API destinations (e.g. the installation setup callback) are route
+      // handlers, not pages — a full navigation is required for them.
+      if (next.startsWith('/api/')) {
+        window.location.href = next;
+        return;
       }
       router.replace(next);
     } catch (err) {
@@ -59,7 +72,12 @@ function LoginContent() {
   const triggerGithubOAuth = () => {
     setError(null);
     // Server route builds the authorize URL, so no build-time public env var is needed.
-    window.location.href = '/api/auth/github/authorize';
+    // Carry `next` through so post-login return (e.g. installation setup) survives;
+    // the authorize route re-validates it as same-origin.
+    const next = searchParams.get('next');
+    window.location.href = next
+      ? `/api/auth/github/authorize?next=${encodeURIComponent(next)}`
+      : '/api/auth/github/authorize';
   };
 
   return (

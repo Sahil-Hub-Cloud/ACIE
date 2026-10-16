@@ -1,8 +1,9 @@
 import { Command } from 'commander';
 import * as path from 'path';
+import chalk from 'chalk';
 import { getChangedFilesFromPR, getFilePatch } from '../utils/git';
 import { analyzeChangedFiles } from '../core/diff-analyzer';
-import { calculateBlastRadius, formatPRComment } from '../core/blast-radius';
+import { calculateBlastRadius } from '../core/blast-radius';
 import { getDb, closeDb, AnalysisQueries } from '../utils/db';
 import { logger, formatRisk, formatScore } from '../utils/logger';
 
@@ -26,6 +27,19 @@ export const analyzeCommand = new Command('analyze')
 
     try {
       const db = getDb(dbPath);
+
+      // Hard fail on an empty graph: blast radius over zero nodes always
+      // yields "LOW RISK", which would be a fabricated verdict.
+      const nodeCount = (
+        db.prepare('SELECT COUNT(*) AS count FROM nodes').get() as { count: number }
+      ).count;
+      if (nodeCount === 0) {
+        console.error(chalk.red('\n❌ ACIE Error: Dependency graph is empty.'));
+        console.error(chalk.yellow('   → You must run `acie index` first to build the dependency graph.'));
+        console.error(chalk.yellow('   → If you already ran it, ensure you are in the correct repository root.\n'));
+        closeDb();
+        process.exit(1);
+      }
 
       // Get files changed
       const files = await getChangedFilesFromPR(cwd, options.base, options.head);

@@ -17,6 +17,9 @@ out/
 # Turbo
 .turbo/
 
+# TypeScript
+*.tsbuildinfo
+
 # SQLite database
 data/
 *.db
@@ -45,6 +48,10 @@ archive/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Tool workspace ids
+.freebuff/
+.v3code/
 
 .vercel
 .env*

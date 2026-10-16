@@ -1,11 +1,38 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest';
 import crypto from 'crypto';
 
-// The webhook only touches libSQL when a database is configured; stub it so the
-// suite never needs a real Turso instance.
+// The webhook only touches libSQL when a database is configured. Force a
+// (mocked) client so tests can observe queries and inject rows; no real
+// Turso instance is ever needed.
+const dbState = vi.hoisted(() => {
+  process.env.TURSO_DATABASE_URL = 'libsql://webhook-test';
+  process.env.TURSO_AUTH_TOKEN = 'test-token';
+  return {
+    executed: [] as string[],
+    analysisArgs: [] as unknown[][],
+    handlers: [] as Array<(sql: string) => { rows: unknown[]; rowsAffected: number } | undefined>,
+    reset() {
+      this.executed = [];
+      this.analysisArgs = [];
+      this.handlers = [];
+    },
+  };
+});
+
 vi.mock('@libsql/client/web', () => ({
   createClient: () => ({
-    execute: async () => ({ rows: [], rowsAffected: 0 }),
+    // libSQL accepts both `execute('sql')` and `execute({ sql, args })`.
+    execute: async (query: string | { sql: string; args?: unknown[] }) => {
+      const sql = typeof query === 'string' ? query : query.sql;
+      const args = typeof query === 'string' ? [] : query.args ?? [];
+      dbState.executed.push(sql);
+      if (sql.includes('INSERT INTO analyses')) dbState.analysisArgs.push(args);
+      for (const handler of dbState.handlers) {
+        const result = handler(sql);
+        if (result) return result;
+      }
+      return { rows: [], rowsAffected: 0 };
+    },
   }),
 }));
 
@@ -107,6 +134,7 @@ beforeEach(() => {
   process.env.GITHUB_TOKEN = 'test-pat';
   delete process.env.GITHUB_APP_ID;
   delete process.env.GITHUB_APP_PRIVATE_KEY;
+  dbState.reset();
   installFetchMock();
 });
 
@@ -114,6 +142,11 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   delete process.env.GITHUB_WEBHOOK_SECRET;
   delete process.env.GITHUB_TOKEN;
+});
+
+afterAll(() => {
+  delete process.env.TURSO_DATABASE_URL;
+  delete process.env.TURSO_AUTH_TOKEN;
 });
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -160,6 +193,41 @@ describe('webhook signature verification', () => {
     const response = await POST(signedRequest('ping', { zen: 'Keep it logically awesome.' }));
     expect(response.status).toBe(200);
     expect((await response.json()).zen).toBe('Keep it logically awesome.');
+  });
+
+  it('fails closed in production when the webhook secret is unset', async () => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+    const previousNodeEnv = process.env.NODE_ENV;
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    try {
+      const response = await POST(
+        new Request(ENDPOINT, {
+          method: 'POST',
+          headers: { 'X-GitHub-Event': 'ping', 'Content-Type': 'application/json' },
+          body: '{"zen":"unsigned"}',
+        })
+      );
+      expect(response.status).toBe(503);
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = previousNodeEnv;
+      process.env.GITHUB_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    }
+  });
+
+  it('still accepts unsigned requests in development when the secret is unset', async () => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+    try {
+      const response = await POST(
+        new Request(ENDPOINT, {
+          method: 'POST',
+          headers: { 'X-GitHub-Event': 'ping', 'Content-Type': 'application/json' },
+          body: '{"zen":"local dev"}',
+        })
+      );
+      expect(response.status).toBe(200);
+    } finally {
+      process.env.GITHUB_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    }
   });
 });
 
@@ -261,5 +329,120 @@ describe('webhook pull request analysis', () => {
     const body = await response.json();
     expect(body.ignored).toBe(true);
     expect(body.reason).toBe('No source files changed');
+  });
+});
+
+describe('webhook persistence', () => {
+  it('registers the repository and stores the analysis', async () => {
+    const response = await POST(signedRequest('pull_request', PR_PAYLOAD));
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    expect(body.analysisStored).toBe(true);
+    expect(dbState.executed.some((sql) => sql.includes('INSERT INTO repos'))).toBe(true);
+    expect(dbState.executed.some((sql) => sql.includes('INSERT INTO analyses'))).toBe(true);
+  });
+
+  it('stores changed files with GitHub statuses and line counts', async () => {
+    globalThis.fetch = vi.fn(async (input: any, init: any = {}) => {
+      const url = typeof input === 'string' ? input : String(input?.url ?? input);
+      const method = String(init.method ?? 'GET').toUpperCase();
+      calls.push({ url, method, body: typeof init.body === 'string' ? init.body : undefined });
+
+      if (url.includes('/pulls/7/files')) {
+        return json([
+          {
+            filename: 'apps/web/src/lib/utils.ts',
+            status: 'modified',
+            additions: 12,
+            deletions: 4,
+            patch: '@@ -1,3 +1,3 @@\n-function a() {}\n+function a(x) {}',
+          },
+        ]);
+      }
+      if (url.includes('/search/code')) return json({ items: [] });
+      if (url.includes('/issues/7/comments') && method === 'GET') return json([]);
+      if (url.includes('/issues/7/comments') && method === 'POST') return json({ id: 1 });
+      throw new Error(`Unexpected fetch: ${method} ${url}`);
+    }) as unknown as typeof globalThis.fetch;
+
+    const response = await POST(signedRequest('pull_request', PR_PAYLOAD));
+    expect((await response.json()).analysisStored).toBe(true);
+
+    const insert = dbState.executed.find((sql) => sql.includes('INSERT INTO analyses'));
+    expect(insert).toBeDefined();
+    // Column order: ... changed_files is the 9th value.
+    const changedFiles = JSON.parse(String(dbState.analysisArgs[0][8]));
+    expect(changedFiles).toEqual([
+      {
+        filename: 'apps/web/src/lib/utils.ts',
+        status: 'modified',
+        additions: 12,
+        deletions: 4,
+      },
+    ]);
+  });
+
+  it('drops an out-of-order delivery instead of overwriting a newer head', async () => {
+    dbState.handlers.push((sql) => {
+      if (sql.includes('SELECT pr_updated_at')) {
+        return {
+          rows: [{ pr_updated_at: '2999-01-01T00:00:00Z' }],
+          rowsAffected: 0,
+        };
+      }
+      return undefined;
+    });
+
+    const payload = JSON.parse(JSON.stringify(PR_PAYLOAD));
+    payload.pull_request.updated_at = '2026-01-01T00:00:00Z';
+
+    const response = await POST(signedRequest('pull_request', payload));
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    expect(body.ok).toBe(true);
+    expect(body.analysisStored).toBe(false);
+    expect(dbState.executed.some((sql) => sql.includes('INSERT INTO analyses'))).toBe(false);
+  });
+});
+
+describe('webhook credential policy', () => {
+  it('never substitutes the operator PAT when the GitHub App is configured', async () => {
+    const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+    process.env.GITHUB_APP_ID = '123';
+    process.env.GITHUB_APP_PRIVATE_KEY = privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    }) as string;
+    process.env.GITHUB_TOKEN = 'ghp_never_used_in_app_mode';
+
+    const authHeaders: string[] = [];
+    globalThis.fetch = vi.fn(async (input: any, init: any = {}) => {
+      const url = typeof input === 'string' ? input : String(input?.url ?? input);
+      const auth = new Headers(init.headers).get('Authorization') ?? '';
+      authHeaders.push(auth);
+
+      if (url.includes('/app/installations/42/access_tokens')) {
+        return json({ message: 'mint failed' }, 500);
+      }
+      if (url.includes('/repos/acme/widgets/installation')) {
+        return json({ message: 'Not Found' }, 404);
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof globalThis.fetch;
+
+    try {
+      const response = await POST(signedRequest('pull_request', PR_PAYLOAD));
+      expect(response.status).toBe(503);
+      const body = await response.json();
+      expect(body.error).toMatch(/PAT fallback is disabled/);
+      expect(authHeaders.some((h) => h.includes('ghp_never_used_in_app_mode'))).toBe(false);
+      expect(authHeaders.some((h) => h.startsWith('Bearer '))).toBe(true);
+    } finally {
+      delete process.env.GITHUB_APP_ID;
+      delete process.env.GITHUB_APP_PRIVATE_KEY;
+      installFetchMock();
+    }
   });
 });

@@ -1,0 +1,10 @@
+{
+  "root": true,
+  "extends": ["@acie/eslint-config"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "ignorePatterns": [".next/", "dist/", "node_modules/", "next-env.d.ts"]
+}

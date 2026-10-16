@@ -1,9 +1,11 @@
 'use client';
 
-import { ShieldCheck, AlertTriangle, Flame, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Flame, ShieldAlert, ShieldQuestion } from 'lucide-react';
+
+export type BadgeRiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'unknown';
 
 interface RiskScoreBadgeProps {
-  level: 'low' | 'medium' | 'high' | 'critical';
+  level?: BadgeRiskLevel | string;
   score?: number;
 }
 
@@ -29,9 +31,17 @@ export default function RiskScoreBadge({ level, score }: RiskScoreBadgeProps) {
       bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
       icon: ShieldCheck,
     },
+    // Unrecognized or missing levels must never render as "Low Risk" —
+    // unknown data is surfaced as unknown, not as safe.
+    unknown: {
+      label: 'Unknown Risk',
+      bg: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
+      icon: ShieldQuestion,
+    },
   };
 
-  const config = configs[level] || configs.low;
+  const config =
+    configs[level as keyof typeof configs] ?? configs.unknown;
   const Icon = config.icon;
 
   return (

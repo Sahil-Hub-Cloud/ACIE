@@ -5,7 +5,8 @@
     "rootDir": "./src",
     "module": "CommonJS",
     "target": "ES2022",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

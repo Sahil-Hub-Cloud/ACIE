@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { get } from '../../../../lib/db';
+import { readCookie, SESSION_COOKIE } from '../../../../lib/session';
 import type { User } from '../../../../lib/types';
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -9,11 +10,17 @@ if (!JWT_SECRET) console.warn('[ACIE] JWT_SECRET not set.');
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const bearerToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined;
+    // The session normally arrives as an httpOnly cookie; Bearer stays
+    // supported for non-browser clients.
+    const token = bearerToken ?? readCookie(req, SESSION_COOKIE);
+
+    if (!token) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.substring(7);
     if (!JWT_SECRET) return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
     const decoded = jwt.verify(token, JWT_SECRET) as any;
 

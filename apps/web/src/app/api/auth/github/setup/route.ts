@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { run } from '../../../../../lib/db';
 import { getRequestOrigin } from '../../../../../lib/origin';
 import { getInstallationToken } from '../../../../../lib/github-app';
+import { getSessionUser } from '../../../../../lib/authz';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,17 @@ export async function GET(req: Request) {
 
   const destination = new URL('/repos', origin);
 
+  // Installation setup is bound to an authenticated user: whoever completes
+  // setup claims the installation (and therefore every repo under it) for
+  // their session. Unauthenticated arrivals bounce through login first; the
+  // login flow returns them to this exact URL via the same-origin `next`.
+  const user = getSessionUser(req);
+  if (!user) {
+    const loginUrl = new URL('/login', origin);
+    loginUrl.searchParams.set('next', `${url.pathname}${url.search}`);
+    return NextResponse.redirect(loginUrl.toString());
+  }
+
   if (!Number.isFinite(installationId) || installationId <= 0) {
     destination.searchParams.set('setup', 'missing_installation');
     return NextResponse.redirect(destination.toString());
@@ -28,9 +40,13 @@ export async function GET(req: Request) {
   let accountLogin: string | null = null;
   let accountType: string | null = null;
   let repositoryCount = 0;
+  // Only an installation GitHub itself acknowledges may be persisted; the
+  // setup URL is unauthenticated, so the app-JWT token mint is our proof.
+  let verified = false;
 
   try {
     const token = await getInstallationToken(installationId);
+    verified = true;
     const response = await fetch(`https://api.github.com/installation/repositories`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -51,30 +67,25 @@ export async function GET(req: Request) {
     console.warn('[ACIE] Could not read installation details:', (error as Error).message);
   }
 
+  if (!verified) {
+    destination.searchParams.set('setup', 'unverified');
+    destination.searchParams.set('installation_id', String(installationId));
+    return NextResponse.redirect(destination.toString());
+  }
+
   // Best-effort persistence; the app works without a database.
   try {
     await run(
-      `CREATE TABLE IF NOT EXISTS installations (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         installation_id INTEGER NOT NULL UNIQUE,
-         account_login TEXT,
-         account_type TEXT,
-         repository_count INTEGER DEFAULT 0,
-         setup_action TEXT,
-         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-       )`
-    );
-    await run(
-      `INSERT INTO installations (installation_id, account_login, account_type, repository_count, setup_action)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO installations (installation_id, account_login, account_type, repository_count, setup_action, setup_user_id)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(installation_id) DO UPDATE SET
          account_login = excluded.account_login,
          account_type = excluded.account_type,
          repository_count = excluded.repository_count,
          setup_action = excluded.setup_action,
+         setup_user_id = excluded.setup_user_id,
          updated_at = CURRENT_TIMESTAMP`,
-      [installationId, accountLogin, accountType, repositoryCount, setupAction]
+      [installationId, accountLogin, accountType, repositoryCount, setupAction, user.userId]
     );
   } catch (error) {
     console.warn('[ACIE] Installation not persisted:', (error as Error).message);

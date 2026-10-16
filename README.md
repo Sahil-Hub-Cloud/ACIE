@@ -9,14 +9,15 @@ ACIE automatically analyzes every Pull Request and posts a blast radius report -
 ```
 acie/
 |-- apps/
-|   |-- cli/        # Core CLI - parses repos, builds dependency graphs
-|   `-- web/        # Next.js 14 dashboard + API route handlers
+|   |-- cli/          # Core CLI - parses repos, builds dependency graphs
+|   `-- web/          # Next.js 14 dashboard + API route handlers
 |-- packages/
-|   |-- shared/     # Shared TypeScript types
-|   `-- config/     # ESLint + TypeScript configs
-`-- infra/
-    |-- docker/     # Dockerfile + docker-compose
-    `-- github/     # CI workflows
+|   |-- shared/       # Shared TypeScript types
+|   `-- config/       # ESLint + TypeScript configs
+|-- infra/
+|   `-- docker/       # Dockerfile + docker-compose
+`-- .github/
+    `-- workflows/    # CI workflows
 ```
 
 > Note: the API layer lives in `apps/web/src/app/api/*` as Next.js route handlers
@@ -43,18 +44,23 @@ pnpm web dev        # Next.js Web (http://localhost:3000)
 2. GitHub sends a webhook to the ACIE API route (`/api/webhooks/analyze`)
 3. The handler parses the diff, extracts changed exports, and finds downstream importers
 4. The blast radius calculator does BFS on the dependency graph
-5. The risk scorer assigns a score (0-100) and level (low/medium/high/critical)
+5. The scorer applies a heuristic score (0-100) and level (low/medium/high/critical)
 6. ACIE posts a detailed comment on the PR
-7. Results appear in the dashboard
+7. The analysis is persisted for the audit trail
+
+> **Alpha status:** dashboard read APIs are still stubs, so the web UI cannot yet display
+> persisted analyses. The PR comment is the working output. See `docs/AUDIT.md`.
 
 ## Risk Levels
 
-| Level | Score | Meaning |
+| Level | Score | Meaning (heuristic) |
 |-------|-------|---------|
-| LOW | 0-25 | No downstream impact |
-| MEDIUM | 26-50 | 1-2 services affected |
-| HIGH | 51-75 | 3+ services affected |
-| CRITICAL | 76-100 | Entry points affected |
+| LOW | 0-25 | Little structural reach detected |
+| MEDIUM | 26-50 | Limited downstream fan-out |
+| HIGH | 51-75 | Broad downstream fan-out |
+| CRITICAL | 76-100 | Entry points detected in blast radius |
+
+Scores are an uncalibrated structural heuristic — potential impact, not a failure probability.
 
 ## Tech Stack
 

@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, FolderGit2, History, Network, Settings, LogOut, Activity } from 'lucide-react';
+import { FolderGit2, History, Network, Settings, LogOut } from 'lucide-react';
 import { ApiClient } from '../../lib/api';
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Overview', href: '/', icon: LayoutGrid },
     { name: 'Repositories', href: '/repos', icon: FolderGit2 },
     { name: 'Audit Logs', href: '/analysis', icon: History },
     { name: 'Dependency Graph', href: '/graph', icon: Network },
@@ -59,19 +58,9 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
         </nav>
 
         <div className="p-6 border-t border-white/5 bg-[#010409]">
-          <div className="glass p-4 rounded-xl text-center relative overflow-hidden group">
-            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">System Integrity</div>
-            <div className="text-lg font-black text-emerald-400 mb-2 flex items-center justify-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              98.4%
-            </div>
-            <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full w-[98.4%]" />
-            </div>
-          </div>
           <button
             onClick={() => ApiClient.logout()}
-            className="w-full text-center mt-4 text-xs text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            className="w-full text-center text-xs text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1.5"
           >
             <LogOut className="w-4 h-4" /> Logout
           </button>

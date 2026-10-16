@@ -1,36 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export class ApiClient {
-  static getPayload() {
-    if (typeof window === 'undefined') return null;
-    const user = localStorage.getItem('acie_user');
-    return user ? JSON.parse(user) : null;
-  }
-
-  static getToken() {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('acie_token');
-  }
-
-  static setAuth(token: string, user: any) {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('acie_token', token);
-    localStorage.setItem('acie_user', JSON.stringify(user));
-  }
-
+  /** Clears pre-cookie legacy state; the live session is an httpOnly cookie. */
   static clearAuth() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('acie_token');
     localStorage.removeItem('acie_user');
   }
 
-  private static async request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = this.getToken();
+  private static async request<T = any>(
+    path: string,
+    options: RequestInit = {},
+    redirectOn401 = true
+  ): Promise<T> {
     const headers = new Headers(options.headers || {});
-    
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
 
     if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
@@ -39,12 +22,15 @@ export class ApiClient {
     const response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers,
+      // The session cookie must travel even when NEXT_PUBLIC_API_URL is
+      // pointed at another origin during development.
+      credentials: 'include',
     });
 
     if (!response.ok) {
       if (response.status === 401 && typeof window !== 'undefined') {
         this.clearAuth();
-        window.location.href = '/login';
+        if (redirectOn401) window.location.href = '/login';
       }
       const errBody = await response.json().catch(() => ({}));
       throw new Error(errBody.message || `Request failed: ${response.status}`);
@@ -55,25 +41,24 @@ export class ApiClient {
 
   // ── Auth API ─────────────────────────────────────────────────────────────
   static async login(code: string, state?: string) {
-    const res = await this.request<{ token: string; user: any }>('/api/auth/github', {
+    const res = await this.request<{ user: any }>('/api/auth/github', {
       method: 'POST',
       body: JSON.stringify({ code, state }),
     });
-    this.setAuth(res.token, res.user);
     return res.user;
   }
 
   static async logout() {
     try {
-      await this.request('/api/auth/logout', { method: 'POST' });
+      await this.request('/api/auth/logout', { method: 'POST' }, false);
     } finally {
       this.clearAuth();
       window.location.href = '/login';
     }
   }
 
-  static async me() {
-    return this.request('/api/auth/me');
+  static async me(options?: { redirectOn401?: boolean }) {
+    return this.request('/api/auth/me', {}, options?.redirectOn401 ?? true);
   }
 
   // ── Repositories API ─────────────────────────────────────────────────────
@@ -85,7 +70,7 @@ export class ApiClient {
     return this.request(`/api/repos/${id}`);
   }
 
-  static async addRepo(data: { githubId: number; name: string; owner: string; url: string; language: string; isMonorepo?: boolean; monorepoTool?: string }) {
+  static async addRepo(data: { name: string; owner: string; url: string; language: string; isMonorepo?: boolean; monorepoTool?: string }) {
     return this.request('/api/repos', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -111,21 +96,5 @@ export class ApiClient {
 
   static async getAnalysis(id: number) {
     return this.request(`/api/analysis/${id}`);
-  }
-
-  static async getAnalysisStats() {
-    return this.request('/api/analysis/stats');
-  }
-
-  static async previewAnalysis(changedSymbols: any[]) {
-    return this.request('/api/analysis/preview', {
-      method: 'POST',
-      body: JSON.stringify({ changedSymbols }),
-    });
-  }
-
-  // ── Dashboard API ────────────────────────────────────────────────────────
-  static async getDashboardOverview() {
-    return this.request('/api/dashboard/overview');
   }
 }
