@@ -97,20 +97,4 @@ export class ApiClient {
   static async getAnalysis(id: number) {
     return this.request(`/api/analysis/${id}`);
   }
-
-  static async getAnalysisStats() {
-    return this.request('/api/analysis/stats');
-  }
-
-  static async previewAnalysis(changedSymbols: any[]) {
-    return this.request('/api/analysis/preview', {
-      method: 'POST',
-      body: JSON.stringify({ changedSymbols }),
-    });
-  }
-
-  // ── Dashboard API ────────────────────────────────────────────────────────
-  static async getDashboardOverview() {
-    return this.request('/api/dashboard/overview');
-  }
 }
