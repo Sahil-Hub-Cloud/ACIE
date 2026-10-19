@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "framework": "nextjs",
-  "installCommand": "cd ../.. && pnpm install --no-optional",
-  "buildCommand": "cd ../.. && pnpm --filter @acie/web build",
-  "outputDirectory": ".next",
-  "cleanUrls": true
-}
