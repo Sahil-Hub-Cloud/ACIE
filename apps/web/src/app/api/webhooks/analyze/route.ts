@@ -6,6 +6,7 @@ import {
   formatPRComment,
   ACIE_COMMENT_MARKER,
   type GraphEdge,
+  type BlastRadiusResult,
 } from '../../../../lib/blast-radius';
 import { resolveRepoToken, githubFetch, isGitHubAppConfigured } from '../../../../lib/github-app';
 
@@ -17,6 +18,7 @@ const ANALYZED_ACTIONS = new Set(['opened', 'synchronize', 'reopened']);
 const SOURCE_FILE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rb|java|kt)$/;
 const MAX_SEARCHES = 6;
 const MAX_FILE_PAGES = 3;
+const PERFORMANCE_BUDGET_MS = 60_000; // 60-second budget
 
 // ── Signature verification ──────────────────────────────────────────────────
 
@@ -483,12 +485,125 @@ export async function POST(req: Request) {
   }
 }
 
+/**
+ * Fetch test files from the repository using GitHub code search.
+ */
+async function fetchTestFiles(repoFullName: string, token: string): Promise<string[]> {
+  try {
+    const results = await githubFetch<{ items?: Array<{ path: string }> }>(
+      `/search/code?q=${encodeURIComponent(`repo:${repoFullName} (test OR spec) in:file extension:ts extension:tsx extension:js extension:jsx`)}&per_page=100`,
+      {},
+      token
+    );
+    return (results.items ?? []).map(i => i.path);
+  } catch (error) {
+    console.warn('[ACIE] Failed to fetch test files:', (error as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Fetch CODEOWNERS file content from the repository.
+ */
+async function fetchCodeowners(repoFullName: string, token: string, baseSha: string | null): Promise<string | null> {
+  try {
+    const ref = baseSha ?? 'HEAD';
+    const response = await githubFetch<{ content?: string; encoding?: string }>(
+      `/repos/${repoFullName}/contents/.github/CODEOWNERS?ref=${ref}`,
+      {},
+      token
+    );
+    if (response.content && response.encoding === 'base64') {
+      return Buffer.from(response.content, 'base64').toString('utf-8');
+    }
+  } catch {
+    // Try root level CODEOWNERS
+    try {
+      const response = await githubFetch<{ content?: string; encoding?: string }>(
+        `/repos/${repoFullName}/contents/CODEOWNERS?ref=${baseSha ?? 'HEAD'}`,
+        {},
+        token
+      );
+      if (response.content && response.encoding === 'base64') {
+        return Buffer.from(response.content, 'base64').toString('utf-8');
+      }
+    } catch (e) {
+      // Ignore errors fetching from .github/CODEOWNERS, try root level below
+    }
+  }
+  return null;
+}
+
+/**
+ * Post a GitHub Check Run with the blast radius analysis.
+ */
+async function postCheckRun(
+  repoFullName: string,
+  headSha: string,
+  prNumber: number,
+  result: BlastRadiusResult,
+  token: string
+): Promise<void> {
+  const conclusion = result.riskLevel === 'critical' ? 'failure' : 
+                     result.riskLevel === 'high' ? 'failure' :
+                     result.riskLevel === 'medium' ? 'neutral' : 'success';
+
+  const output = {
+    title: 'ACIE Blast Radius Analysis',
+    summary: `Risk: **${result.riskLevel.toUpperCase()}** (${result.riskScore}/100)\n` +
+             `Impacted: ${result.totalImpactedFiles} files, ${result.impactedServices.length} services\n` +
+             `Entry points affected: ${result.entryPointsAffected ? 'Yes' : 'No'}`,
+    text: [
+      '### 📦 Impacted Services',
+      result.impactedServices.map(s => `- **${s.name}**${s.entryPoints.length ? ` (${s.entryPoints.length} entry points)` : ''}`).join('\n') || '- No services affected',
+      '',
+      '### 🧪 Test Selection',
+      result.testSelection?.length ? result.testSelection.map(t => 
+        `- \`${t.testFile}\` — **${t.confidence}** confidence: ${t.reason}`
+      ).join('\n') : '- No test files found or matched',
+      '',
+      '### 👥 Suggested Reviewers',
+      result.reviewerSuggestions?.length ? result.reviewerSuggestions.map(r => 
+        `- \`${r.file}\`: @${r.reviewers.join(', @')} (${r.source})`
+      ).join('\n') : '- No CODEOWNERS or reviewers matched',
+    ].join('\n'),
+  };
+
+  try {
+    await githubFetch(
+      `/repos/${repoFullName}/check-runs`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'ACIE Blast Radius',
+          head_sha: headSha,
+          status: 'completed',
+          conclusion,
+          output,
+          details_url: `https://github.com/${repoFullName}/pull/${prNumber}`,
+        }),
+      },
+      token
+    );
+  } catch (error) {
+    console.warn('[ACIE] Failed to post Check Run:', (error as Error).message);
+  }
+}
+
 async function processEvent(
   payload: any,
   event: string,
   dryRun: boolean,
   delivery: string | null
 ): Promise<NextResponse> {
+  const startTime = Date.now();
+
+  // Performance budget check
+  function checkBudget(): boolean {
+    return Date.now() - startTime < PERFORMANCE_BUDGET_MS;
+  }
+
   {
     // GitHub sends this when you save the webhook — answering it proves liveness.
     if (event === 'ping') {
@@ -571,14 +686,49 @@ async function processEvent(
       return NextResponse.json({ ok: true, ignored: true, reason: 'No source files changed' });
     }
 
+    // Early performance budget check
+    if (!checkBudget()) {
+      console.warn(`[ACIE] Performance budget exceeded during file fetch for ${repoFullName}#${prNumber}`);
+    }
+
     const changedSymbols = changedFiles.flatMap((file) =>
       analyzePatch(file.filename, file.patch ?? '')
     );
     const filenames = changedFiles.map((file) => file.filename);
 
+    // Fetch test files and CODEOWNERS in parallel (only if budget allows)
+    let testFiles: string[] = [];
+    let codeowners: string | null = null;
+    
+    if (checkBudget()) {
+      const [tf, co] = await Promise.all([
+        fetchTestFiles(repoFullName, token),
+        fetchCodeowners(repoFullName, token, pr.head?.sha ?? null),
+      ]);
+      testFiles = tf;
+      codeowners = co;
+    }
+
+    // Another budget check after fetching test files
+    if (!checkBudget()) {
+      console.warn(`[ACIE] Performance budget exceeded after test/CODEOWNERS fetch for ${repoFullName}#${prNumber}`);
+    }
+
     const edges = await findImporters(repoFullName, filenames, token);
-    const result = calculateBlastRadiusInMemory(filenames, changedSymbols, edges);
+
+    if (!checkBudget()) {
+      console.warn(`[ACIE] Performance budget exceeded after importer search for ${repoFullName}#${prNumber}`);
+    }
+
+    const result = calculateBlastRadiusInMemory(filenames, changedSymbols, edges, testFiles, codeowners);
     const comment = formatPRComment(prNumber, filenames, result);
+
+    // Post Check Run (async, don't wait)
+    if (!dryRun && pr.head?.sha) {
+      postCheckRun(repoFullName, pr.head.sha, prNumber, result, token).catch(e => 
+        console.warn('[ACIE] Check Run post failed:', (e as Error).message)
+      );
+    }
 
     let commentAction: 'created' | 'updated' | 'skipped' = 'skipped';
     if (!dryRun) {
@@ -616,6 +766,13 @@ async function processEvent(
         })) === 'stored';
     }
 
+    const durationMs = Date.now() - startTime;
+    const budgetExceeded = durationMs > PERFORMANCE_BUDGET_MS;
+
+    if (budgetExceeded) {
+      console.warn(`[ACIE] Performance budget EXCEEDED: ${durationMs}ms for ${repoFullName}#${prNumber} (budget: ${PERFORMANCE_BUDGET_MS}ms)`);
+    }
+
     return NextResponse.json({
       ok: true,
       event,
@@ -633,6 +790,11 @@ async function processEvent(
       analysisStored,
       comment: commentAction,
       commentPreview: dryRun ? comment : undefined,
+      // Phase 4 additions:
+      durationMs,
+      budgetExceeded,
+      testSelection: result.testSelection?.slice(0, 20), // limit for response size
+      reviewerSuggestions: result.reviewerSuggestions,
     });
   }
 }

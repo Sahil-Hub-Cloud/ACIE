@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
+import { scoreToLevel } from '@acie/engine';
 
 export const logger = {
   info: (msg: string) => console.log(chalk.cyan('ℹ'), msg),
@@ -35,8 +36,12 @@ export function formatRisk(level: string): string {
 }
 
 export function formatScore(score: number): string {
-  if (score >= 76) return chalk.red.bold(score.toString());
-  if (score >= 51) return chalk.red(score.toString());
-  if (score >= 26) return chalk.yellow(score.toString());
-  return chalk.green(score.toString());
+  const level = scoreToLevel(score);
+  switch (level) {
+    case 'critical': return chalk.red.bold(score.toString());
+    case 'high': return chalk.red(score.toString());
+    case 'medium': return chalk.yellow(score.toString());
+    case 'low': return chalk.green(score.toString());
+    default: return chalk.dim(score.toString());
+  }
 }

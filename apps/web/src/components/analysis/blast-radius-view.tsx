@@ -1,10 +1,29 @@
 'use client';
 
-import { Network, Server, ArrowRight } from 'lucide-react';
-import type { BlastRadiusResult } from '../../lib/types';
+import { Network, Server, Link, GitBranch } from 'lucide-react';
+import type { BlastRadiusResult, ProofPathStep } from '@acie/engine/graph';
 
 interface BlastRadiusViewProps {
   blastRadius: BlastRadiusResult;
+}
+
+function formatProofPath(proofPath: ProofPathStep[] | undefined): string {
+  if (!proofPath || proofPath.length === 0) return '';
+  
+  return proofPath.map((step, i) => {
+    const indent = '  '.repeat(i + 1);
+    const via = step.viaSymbol ? ` (via \`${step.viaSymbol}\`)` : '';
+    const edgeIcon = step.edgeType === 're-exports' ? '↳' : '→';
+    return `${indent}${edgeIcon} \`${step.file}\` ${edgeTypeLabel(step.edgeType)} \`${step.symbol}\`${via}`;
+  }).join('\n');
+}
+
+function edgeTypeLabel(type: string): string {
+  switch (type) {
+    case 'imports': return 'imports';
+    case 're-exports': return 're-exports';
+    default: return type;
+  }
 }
 
 export default function BlastRadiusView({ blastRadius }: BlastRadiusViewProps) {
@@ -49,7 +68,7 @@ export default function BlastRadiusView({ blastRadius }: BlastRadiusViewProps) {
         )}
       </div>
 
-      {/* Downstream Chain Tree */}
+      {/* Downstream Chain Tree with Proof Paths */}
       <div className="glass p-6 rounded-2xl">
         <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
           <Network className="w-4 h-4 text-indigo-400" />
@@ -59,27 +78,37 @@ export default function BlastRadiusView({ blastRadius }: BlastRadiusViewProps) {
         {chain.length === 0 ? (
           <p className="text-xs text-slate-500 italic">No downstream file dependents found.</p>
         ) : (
-          <div className="space-y-2 border-l border-white/5 pl-4 ml-2">
+          <div className="space-y-4">
             {chain.slice(0, 15).map((node, idx) => {
-              const baseName = node.file.split('/').pop();
+              const baseName = node.file.split('/').pop() || node.file;
               const dirName = node.file.substring(0, node.file.lastIndexOf('/'));
               
               return (
-                <div
-                  key={idx}
-                  style={{ paddingLeft: `${(node.depth - 1) * 12}px` }}
-                  className="flex items-start gap-2.5 text-xs text-slate-400"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 mt-0.5 text-slate-600 shrink-0" />
-                  <div className="font-mono">
-                    <span className="text-slate-500">{dirName}/</span>
-                    <span className="text-white font-bold">{baseName}</span>
-                    {node.symbols.length > 0 && (
-                      <span className="text-[9px] text-accent bg-accent/10 px-1.5 py-0.5 rounded ml-2 border border-accent/10">
-                        imports {node.symbols.join(', ')}
-                      </span>
-                    )}
+                <div key={idx} className="border-l border-white/5 pl-4 ml-2">
+                  <div className="flex items-start gap-2.5 text-xs text-slate-400 mb-2">
+                    <GitBranch className="w-3.5 h-3.5 mt-0.5 text-slate-600 shrink-0" />
+                    <div className="font-mono">
+                      <span className="text-slate-500">{dirName}/</span>
+                      <span className="text-white font-bold">{baseName}</span>
+                      {node.symbols.length > 0 && (
+                        <span className="text-[9px] text-accent bg-accent/10 px-1.5 py-0.5 rounded ml-2 border border-accent/10">
+                          imports {node.symbols.join(', ')}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  
+                  {node.proofPath && node.proofPath.length > 0 && (
+                    <div className="ml-4 mt-2 pt-2 border-t border-white/5">
+                      <div className="flex items-center gap-1.5 text-[9px] text-slate-500 mb-1">
+                        <Link className="w-3 h-3 text-emerald-400" />
+                        <span className="font-bold text-emerald-400 uppercase tracking-wider">Proof Path</span>
+                      </div>
+                      <pre className="text-[9px] text-slate-400 font-mono bg-slate-950/50 p-2 rounded whitespace-pre-wrap overflow-x-auto">
+{formatProofPath(node.proofPath)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               );
             })}

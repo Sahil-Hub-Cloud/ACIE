@@ -1,0 +1,38 @@
+{
+  "name": "@acie/engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./scoring": {
+      "types": "./dist/scoring/index.d.ts",
+      "default": "./dist/scoring/index.js"
+    },
+    "./graph": {
+      "types": "./dist/graph/index.d.ts",
+      "default": "./dist/graph/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@acie/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@acie/eslint-config": "workspace:*",
+    "@acie/typescript-config": "workspace:*",
+    "eslint": "^8.57.1",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}

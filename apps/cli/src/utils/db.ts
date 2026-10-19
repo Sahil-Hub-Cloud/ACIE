@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS edges (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   source_file TEXT NOT NULL,
   target_file TEXT NOT NULL,
-  edge_type TEXT NOT NULL,
+  source_symbol TEXT,      -- Local name in source file (e.g., 'foo' in 'import { foo }')
+  target_symbol TEXT,      -- Exported name in target file (e.g., 'bar' in 'export { bar as foo }')
+  edge_type TEXT NOT NULL, -- 'imports' | 're-exports' | 'calls' | 'extends' | 'implements'
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -79,14 +81,16 @@ CREATE INDEX IF NOT EXISTS idx_nodes_file ON nodes(file_path);
 CREATE INDEX IF NOT EXISTS idx_nodes_symbol ON nodes(symbol_name);
 CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source_file);
 CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(target_file);
+CREATE INDEX IF NOT EXISTS idx_edges_source_symbol ON edges(source_symbol);
+CREATE INDEX IF NOT EXISTS idx_edges_target_symbol ON edges(target_symbol);
 CREATE INDEX IF NOT EXISTS idx_analyses_repo ON analyses(repo_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_risk ON analyses(risk_level);
 
 -- Collapse duplicates written before uniqueness was enforced, then enforce it
 DELETE FROM nodes WHERE id NOT IN (SELECT MIN(id) FROM nodes GROUP BY file_path, symbol_name);
-DELETE FROM edges WHERE id NOT IN (SELECT MIN(id) FROM edges GROUP BY source_file, target_file, edge_type);
+DELETE FROM edges WHERE id NOT IN (SELECT MIN(id) FROM edges GROUP BY source_file, target_file, source_symbol, target_symbol, edge_type);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_unique ON nodes(file_path, symbol_name);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_edges_unique ON edges(source_file, target_file, edge_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edges_unique ON edges(source_file, target_file, source_symbol, target_symbol, edge_type);
 `;
 
 let _db: Database.Database | null = null;
@@ -153,10 +157,12 @@ export const EdgeQueries = {
     sourceFile: string;
     targetFile: string;
     edgeType: string;
+    sourceSymbol?: string | null;
+    targetSymbol?: string | null;
   }>) {
     const insert = db.prepare(`
-      INSERT OR IGNORE INTO edges (source_file, target_file, edge_type)
-      VALUES (@sourceFile, @targetFile, @edgeType)
+      INSERT OR IGNORE INTO edges (source_file, target_file, source_symbol, target_symbol, edge_type)
+      VALUES (@sourceFile, @targetFile, @sourceSymbol, @targetSymbol, @edgeType)
     `);
     const insertMany = db.transaction((rows: typeof edges) => {
       for (const row of rows) insert.run(row);
@@ -168,12 +174,12 @@ export const EdgeQueries = {
     db.prepare('DELETE FROM edges WHERE source_file = ?').run(filePath);
   },
 
-  getImportersOf(db: Database.Database, targetFile: string): Array<{ source_file: string }> {
-    return db.prepare('SELECT source_file FROM edges WHERE target_file = ?').all(targetFile) as Array<{ source_file: string }>;
+  getImportersOf(db: Database.Database, targetFile: string): Array<{ source_file: string; source_symbol?: string; target_symbol?: string }> {
+    return db.prepare('SELECT source_file, source_symbol, target_symbol FROM edges WHERE target_file = ?').all(targetFile) as Array<{ source_file: string; source_symbol?: string; target_symbol?: string }>;
   },
 
-  getImportsFrom(db: Database.Database, sourceFile: string): Array<{ target_file: string }> {
-    return db.prepare('SELECT target_file FROM edges WHERE source_file = ?').all(sourceFile) as Array<{ target_file: string }>;
+  getImportsFrom(db: Database.Database, sourceFile: string): Array<{ target_file: string; source_symbol?: string; target_symbol?: string }> {
+    return db.prepare('SELECT target_file, source_symbol, target_symbol FROM edges WHERE source_file = ?').all(sourceFile) as Array<{ target_file: string; source_symbol?: string; target_symbol?: string }>;
   },
 
   getAll(db: Database.Database) {

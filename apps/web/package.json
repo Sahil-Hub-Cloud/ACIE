@@ -13,6 +13,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@acie/engine": "workspace:*",
+    "@acie/shared": "workspace:*",
     "@libsql/client": "^0.6.0",
     "@xyflow/react": "^12.0.4",
     "clsx": "^2.1.0",

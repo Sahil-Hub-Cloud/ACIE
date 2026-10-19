@@ -1,0 +1,1 @@
+export const ACIE_COMMENT_MARKER = '<!-- acie:blast-radius -->';

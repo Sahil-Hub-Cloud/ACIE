@@ -229,8 +229,8 @@ describe('generateRecommendations', () => {
       ],
     });
 
-    expect(recs.some(r => r.includes('Removed exports'))).toBe(true);
-    expect(recs.some(r => r.includes('oldFunction'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('Removed exports'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('oldFunction'))).toBe(true);
   });
 
   it('should warn about modified exports', () => {
@@ -243,7 +243,7 @@ describe('generateRecommendations', () => {
       ],
     });
 
-    expect(recs.some(r => r.includes('Modified exports'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('Modified exports'))).toBe(true);
   });
 
   it('should warn about entry points', () => {
@@ -254,7 +254,7 @@ describe('generateRecommendations', () => {
       changedSymbols: [],
     });
 
-    expect(recs.some(r => r.includes('Entry points'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('Entry points'))).toBe(true);
   });
 
   it('should recommend coordinated deployment for many services', () => {
@@ -265,7 +265,7 @@ describe('generateRecommendations', () => {
       changedSymbols: [],
     });
 
-    expect(recs.some(r => r.includes('coordinated deployment'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('coordinated deployment'))).toBe(true);
   });
 
   it('should recommend senior review for high/critical risk', () => {
@@ -276,7 +276,7 @@ describe('generateRecommendations', () => {
       changedSymbols: [],
     });
 
-    expect(recs.some(r => r.includes('senior engineers'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('senior engineers'))).toBe(true);
   });
 
   it('should provide standard recommendation when no issues', () => {
@@ -287,6 +287,6 @@ describe('generateRecommendations', () => {
       changedSymbols: [],
     });
 
-    expect(recs.some(r => r.includes('No critical issues'))).toBe(true);
+    expect(recs.some((r: string) => r.includes('No critical issues'))).toBe(true);
   });
 });

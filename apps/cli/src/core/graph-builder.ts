@@ -40,6 +40,8 @@ export interface ParseResult {
   imports: Array<{
     targetFile: string;
     edgeType: string;
+    sourceSymbol?: string | null;  // Local name in importing file
+    targetSymbol?: string | null;  // Exported name in target file
   }>;
 }
 
@@ -79,14 +81,59 @@ export function parseFileRegex(filePath: string, content: string, rootPath: stri
     }
   }
 
-  // Extract imports
-  const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
+  // Extract imports with symbol names (basic support for named imports)
+  const importRegex = /import\s+(?:(?:(\w+)|(?:\*\s+as\s+(\w+))|(?:\{([^}]+)\}))\s+from\s+)?['"]([^'"]+)['"]/g;
   let match: RegExpExecArray | null;
   while ((match = importRegex.exec(content)) !== null) {
-    const specifier = match[1];
+    const defaultImport = match[1];
+    const namespaceImport = match[2];
+    const namedImports = match[3];
+    const specifier = match[4];
     const resolved = resolveImport(filePath, specifier, rootPath);
     if (resolved) {
-      imports.push({ targetFile: resolved, edgeType: 'imports' });
+      if (namedImports) {
+        // Parse named imports: { foo, bar as baz }
+        const namedMatches = namedImports.matchAll(/(\w+)(?:\s+as\s+(\w+))?/g);
+        for (const nm of namedMatches) {
+          const targetSymbol = nm[1];
+          const sourceSymbol = nm[2] || targetSymbol;
+          imports.push({ targetFile: resolved, edgeType: 'imports', sourceSymbol, targetSymbol });
+        }
+      } else if (defaultImport) {
+        imports.push({ targetFile: resolved, edgeType: 'imports', sourceSymbol: defaultImport, targetSymbol: 'default' });
+      } else if (namespaceImport) {
+        imports.push({ targetFile: resolved, edgeType: 'imports', sourceSymbol: namespaceImport, targetSymbol: '*' });
+      } else {
+        imports.push({ targetFile: resolved, edgeType: 'imports', sourceSymbol: null, targetSymbol: null });
+      }
+    }
+  }
+
+  // Also handle export { } from re-exports
+  const reExportRegex = /export\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g;
+  let reMatch: RegExpExecArray | null;
+  while ((reMatch = reExportRegex.exec(content)) !== null) {
+    const namedExports = reMatch[1];
+    const specifier = reMatch[2];
+    const resolved = resolveImport(filePath, specifier, rootPath);
+    if (resolved) {
+      const namedMatches = namedExports.matchAll(/(\w+)(?:\s+as\s+(\w+))?/g);
+      for (const nm of namedMatches) {
+        const targetSymbol = nm[1];
+        const sourceSymbol = nm[2] || targetSymbol;
+        imports.push({ targetFile: resolved, edgeType: 're-exports', sourceSymbol, targetSymbol });
+      }
+    }
+  }
+
+  // Handle export * from
+  const starExportRegex = /export\s+\*\s+from\s+['"]([^'"]+)['"]/g;
+  let starMatch: RegExpExecArray | null;
+  while ((starMatch = starExportRegex.exec(content)) !== null) {
+    const specifier = starMatch[1];
+    const resolved = resolveImport(filePath, specifier, rootPath);
+    if (resolved) {
+      imports.push({ targetFile: resolved, edgeType: 're-exports', sourceSymbol: '*', targetSymbol: '*' });
     }
   }
 
@@ -111,11 +158,47 @@ export function parseFileAST(
     symbols.push({ symbolName: nameNode.text, symbolKind: kind, lineNumber: row, isExported });
   };
 
-  const addImportEdge = (sourceNode: TSNode | null): void => {
+  // Extract imported symbol names from import_clause or export_clause
+  const extractImportSymbols = (clauseNode: TSNode | null): Array<{ sourceSymbol: string; targetSymbol: string }> => {
+    const result: Array<{ sourceSymbol: string; targetSymbol: string }> = [];
+    if (!clauseNode) return result;
+
+    if (clauseNode.type === 'named_imports' || clauseNode.type === 'export_clause') {
+      // import { foo, bar as baz } / export { foo, bar as baz }
+      for (const child of clauseNode.children) {
+        if (child.type === 'import_specifier' || child.type === 'export_specifier') {
+          const nameNode = child.childForFieldName('name');
+          const aliasNode = child.childForFieldName('alias');
+          const targetSymbol = nameNode ? nameNode.text : '*';
+          const sourceSymbol = aliasNode ? aliasNode.text : targetSymbol;
+          result.push({ sourceSymbol, targetSymbol });
+        }
+      }
+    } else if (clauseNode.type === 'namespace_import' || clauseNode.type === 'namespace_export') {
+      // import * as ns / export * as ns
+      const aliasNode = clauseNode.childForFieldName('alias');
+      const alias = aliasNode ? aliasNode.text : '*';
+      result.push({ sourceSymbol: alias, targetSymbol: '*' });
+    } else if (clauseNode.type === 'identifier') {
+      // import defaultExport / export default defaultExport
+      result.push({ sourceSymbol: clauseNode.text, targetSymbol: 'default' });
+    }
+    return result;
+  };
+
+  const addImportEdge = (sourceNode: TSNode | null, sourceSymbols: Array<{ sourceSymbol: string; targetSymbol: string }> = [], edgeType: 'imports' | 're-exports' = 'imports'): void => {
     if (!sourceNode) return;
     const specifier = sourceNode.text.replace(/['"]/g, '');
     const resolved = resolveImport(filePath, specifier, rootPath);
-    if (resolved) imports.push({ targetFile: resolved, edgeType: 'imports' });
+    if (resolved) {
+      if (sourceSymbols.length > 0) {
+        for (const { sourceSymbol, targetSymbol } of sourceSymbols) {
+          imports.push({ targetFile: resolved, edgeType, sourceSymbol, targetSymbol });
+        }
+      } else {
+        imports.push({ targetFile: resolved, edgeType, sourceSymbol: null, targetSymbol: null });
+      }
+    }
   };
 
   const recordDeclaration = (decl: TSNode, isExported: boolean): void => {
@@ -154,11 +237,30 @@ export function parseFileAST(
             return;
           }
           // export { x } from './y' / export * from './y' — edge, not a new local symbol
-          addImportEdge(node.childForFieldName('source'));
+          const sourceNode = node.childForFieldName('source');
+          
+          // Find export_clause by type (it's a child but not a named field)
+          const exportClause = node.children.find(child => child.type === 'export_clause');
+          
+          // Check if this is `export * from` (no export_clause, just * token)
+          const hasStarExport = node.children.some(child => child.type === '*');
+          
+          let reExportSymbols: Array<{ sourceSymbol: string; targetSymbol: string }> = [];
+          if (exportClause) {
+            reExportSymbols = extractImportSymbols(exportClause);
+          } else if (hasStarExport) {
+            reExportSymbols = [{ sourceSymbol: '*', targetSymbol: '*' }];
+          }
+          
+          // Use 're-exports' edge type for re-export statements
+          addImportEdge(sourceNode, reExportSymbols, 're-exports');
           return;
         }
         case 'import_statement': {
-          addImportEdge(node.childForFieldName('source'));
+          const sourceNode = node.childForFieldName('source');
+          const importClause = node.childForFieldName('declaration'); // import_clause
+          const importSymbols = extractImportSymbols(importClause);
+          addImportEdge(sourceNode, importSymbols);
           break;
         }
         case 'function_declaration':
@@ -258,6 +360,8 @@ export async function buildGraph(rootPath: string, dbPath: string): Promise<void
           sourceFile: relativePath,
           targetFile: targetRelative,
           edgeType: imp.edgeType,
+          sourceSymbol: imp.sourceSymbol,
+          targetSymbol: imp.targetSymbol,
         });
       }
 
@@ -325,5 +429,7 @@ export async function updateFileInGraph(
     sourceFile: relativePath,
     targetFile: path.relative(rootPath, imp.targetFile).replace(/\\/g, '/'),
     edgeType: imp.edgeType,
+    sourceSymbol: imp.sourceSymbol,
+    targetSymbol: imp.targetSymbol,
   })));
 }
